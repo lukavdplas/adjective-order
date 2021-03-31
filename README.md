@@ -1,3 +1,3 @@
 # Adjective order
 
-Repository for MA thesis things.
+This repository contains my ongoing work for my master thesis at Utrecht University.
