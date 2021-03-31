@@ -67,6 +67,7 @@ docs/site/
 # environment.
 Manifest.toml
 
-# Misc
+# Results
 
-*_raw.csv
+*/results_*.csv
+*/results.csv
