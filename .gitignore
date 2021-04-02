@@ -69,5 +69,5 @@ Manifest.toml
 
 # Results
 
-*/results_*.csv
-*/results.csv
+results_*.csv
+results.csv
