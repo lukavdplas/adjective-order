@@ -144,7 +144,8 @@ md"## Format results"
 # ╔═╡ 26286993-52c4-4f47-8aa9-4835636131d1
 columns = [ 
 		"participant", "id", "response", "time", 
-	"group", "condition", names(item_data)[2:end]...
+	"group", "condition", names(item_data)[2:end]...,
+	"stimulus_size", "stimulus_price"
 	]
 
 # ╔═╡ 51d61b17-4016-4135-ba2a-f0b0cd893999
@@ -196,6 +197,12 @@ item_results = let
 				metadata...
 			)
 			
+			for col in columns
+				if !(col in keys(data))
+					data[col] = missing
+				end
+			end
+			
 			push!(df, data)
 		end
 		
@@ -203,6 +210,149 @@ item_results = let
 	
 	df
 end 
+
+# ╔═╡ 4000e200-f3b9-4d09-af10-48b8b4ad5a97
+md"""
+### Semantic judgements
+"""
+
+# ╔═╡ ef76ed48-c7d2-42a4-b9f9-6fa3bc718114
+semantic_items = let
+	ids = [
+		"tv_sj_big_bim", "tv_sj_big_unim", 
+		"tv_sj_exp_bim", "tv_sj_exp_unim",
+		"ch_sj_long_bim", "ch_sj_long_unim",
+		"ch_sj_exp_bim", "ch_sj_exp_unim",
+	]
+	
+	parts(id) = split(id, "_")
+	
+	scenarios = map(ids) do id
+		parts(id)[1] == "tv" ? "tv" : "couch"
+	end
+	
+	adjectives = map(ids) do id
+		parts(id)[3] == "exp" ? "expensive" : parts(id)[3]
+	end
+	
+	conditions = map(ids) do id
+		parts(id)[4] == "bim" ? "bimodal" : "unimodal"
+	end
+	
+	DataFrame(
+		"id" => ids,
+		"scenario" => scenarios,
+		"adjective" => adjectives,
+		"condition" => conditions
+	)
+end
+
+# ╔═╡ 69044955-6953-4517-984a-a3032ad72185
+stimuli_data = CSV.read("stimuli_data.csv")
+
+# ╔═╡ 43129d45-0772-467b-ada9-4c7337423973
+function parse_answer(answer, scenario)	
+	raw_items = split(answer, ",")
+	
+	clean_items = map(raw_items) do item
+		words = split(strip(item), r"\s+")
+		size = words[2]
+		price = words[end]
+		
+		(size, price)
+	end
+	
+	parse_size(item) = let
+		sizestring = item[1]
+		if scenario == "tv"
+			parse(Int64, sizestring)
+		else
+			stripped = strip(sizestring, ['\"'])
+			splitted = split(stripped, r"'")
+			feet, inches = parse.(Int64, splitted)
+			total_inches = inches + 12 * feet
+		end
+	end
+	
+	parse_price(item) = parse(Int64, item[2])
+	
+	map(clean_items) do item
+		Dict("size" => parse_size(item), "price" => parse_price(item))
+	end
+end
+
+# ╔═╡ 5c40473f-5e91-4190-ad8a-5de254284041
+function collect_semantic_judgements(response, scenario, condition, adjective)
+	if ismissing(response)
+		return missing
+	end
+	
+	selection = parse_answer(response, scenario)
+	stimuli = filter(stimuli_data) do row
+		(row.scenario == scenario) && row[condition]
+	end
+	
+	map(eachrow(stimuli)) do row
+		size = row["size"]
+		price = row["price"]
+		ismatch(item) = (item["size"] == size) && (item["price"] == price)
+		
+		id = "sj_" * adjective * "_" * row["index"]
+		selected = any(ismatch.(selection))
+		
+		Dict(
+			"id" => id,
+			"stimulus_size" => size,
+			"stimulus_price" => price,
+			"response" => selected,
+		)
+	end
+end
+
+# ╔═╡ bac8883b-919f-4026-bea0-9e2e95b9fc9d
+semantic_results = let
+	df = empty_df()
+	
+	for participant in 1:nrow(results)
+		group = results[participant, "Group"]
+		
+		for item in eachrow(semantic_items)
+			scenario = item["scenario"]
+			condition = condition_table[group, scenario]
+			adjective = item["adjective"]
+			colname = item["id"]
+			response = results[participant, colname]
+			
+			if !ismissing(response)
+				judgements = collect_semantic_judgements(
+					response, scenario, condition, adjective)
+			
+				for judgement in judgements
+					
+					data = Dict(
+						"participant" => participant,
+						"group" => group,
+						"condition" => condition,
+						"scenario" => scenario,
+						"adj_target" => adjective,
+						"item_type" => "semantic",
+						judgement...
+					)
+					
+					for col in columns
+						if !(col in keys(data))
+							data[col] = missing
+						end
+					end
+					
+					push!(df, data)
+				end
+			end
+		end
+	end
+	
+	df
+end
 
 # ╔═╡ 23ca8de5-06ee-4b90-ab0a-d25d68142da7
 md"""
@@ -270,21 +420,18 @@ meta_results = let
 		#other questions
 		for item in meta_items
 			response = results[participant, item]
-			metadata = map(names(item_data)) do name
-				if name == "item_type"
-					name => "meta"
-				elseif name == "id"
-					name => item
-				else
-					name => missing
-				end
-			end
 			
 			data = Dict("participant" => participant, "group" => group,
-				"condition" => missing, "response" => response,
-				"time" => missing,
-				metadata...
+				"response" => response,
+				"item_type" => "meta",
+				"id" => item,
 			)
+			
+			for col in columns
+				if !(col in keys(data))
+					data[col] = missing
+				end
+			end
 			
 			push!(df, data)
 		end	
@@ -311,24 +458,27 @@ time_results = let
 		
 		for (item, colname) in time_items	
 			time = results[participant, colname]
-		
-			data = map(columns) do col
-				if col == "participant"
-					participant
-				elseif col == "group"
-					group
-				elseif col == "item_type"
-					"meta"
-				elseif col == "id"
-					item
-				elseif col == "time"
-					time
-				elseif col == "condition" && item == "time_tv"
-					condition_table[group, "tv"]
-				elseif col == "condition" && item == "time_couch"
-					condition_table[group, "couch"]
-				else
-					missing
+			
+			condition = if item == "time_tv"
+				condition_table[group, "tv"]
+			elseif item == "time_couch"
+				condition_table[group, "couch"]
+			else
+				missing
+			end
+			
+			data = Dict(
+				"participant" => participant,
+				"item_type" => "meta",
+				"id" => item,
+				"time" => time,
+				"group" => group,
+				"condition" => condition
+			)
+			
+			for col in columns
+				if !(col in keys(data))
+					data[col] = missing
 				end
 			end
 
@@ -343,7 +493,12 @@ end
 md"### All results"
 
 # ╔═╡ 632f6074-cfa1-47e4-a738-86dce66cbfb1
-all_results = [item_results ; confidence_results ; meta_results ; time_results] ;
+all_results = [
+	item_results ; 
+	semantic_results ; 
+	confidence_results ; 
+	meta_results ; 
+	time_results] ;
 
 # ╔═╡ 022a4a99-8e10-4204-a8af-0388f8c56f05
 CSV.write("results.csv", all_results)
@@ -363,6 +518,12 @@ CSV.write("results.csv", all_results)
 # ╟─5acc86ef-6ff1-43e7-adf2-54112f9fa79b
 # ╟─f57aa7b5-cc63-48da-aa05-00b223a5fd78
 # ╠═21492ade-a33d-489e-9113-f13bb4251986
+# ╟─4000e200-f3b9-4d09-af10-48b8b4ad5a97
+# ╟─ef76ed48-c7d2-42a4-b9f9-6fa3bc718114
+# ╠═69044955-6953-4517-984a-a3032ad72185
+# ╠═43129d45-0772-467b-ada9-4c7337423973
+# ╠═5c40473f-5e91-4190-ad8a-5de254284041
+# ╠═bac8883b-919f-4026-bea0-9e2e95b9fc9d
 # ╟─23ca8de5-06ee-4b90-ab0a-d25d68142da7
 # ╠═9967b13c-4541-4b2e-b566-f4aefca41c9d
 # ╠═4dba5fc9-d218-461b-9e29-1405b6f9aa58
