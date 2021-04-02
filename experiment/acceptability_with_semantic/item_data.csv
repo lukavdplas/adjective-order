@@ -1,0 +1,37 @@
+id,adjectivestring,filler_acceptability,item_type,scenario,adj_target,adj_secondary,adj_secondary_type,order
+tv_test_1,big expensive,,test,tv,big,expensive,scalar,first
+tv_test_2,expensive big,,test,tv,big,expensive,scalar,second
+tv_test_3,refurbished big,,test,tv,big,refurbished,absolute,second
+tv_test_4,big refurbished,,test,tv,big,refurbished,absolute,first
+tv_test_5,big cheap,,test,tv,big,cheap,scalar,first
+tv_test_6,cheap big,,test,tv,big,cheap,scalar,second
+tv_test_7,big discounted,,test,tv,big,discounted,absolute,first
+tv_test_8,discounted big,,test,tv,big,discounted,absolute,second
+ch_test_1,long expensive,,test,couch,long,expensive,scalar,first
+ch_test_2,expensive long,,test,couch,long,expensive,scalar,second
+ch_test_3,leather long,,test,couch,long,leather,absolute,second
+ch_test_4,long leather,,test,couch,long,leather,absolute,first
+ch_test_5,cheap long,,test,couch,long,cheap,scalar,second
+ch_test_6,long cheap,,test,couch,long,cheap,scalar,first
+ch_test_7,discounted long,,test,couch,long,discounted,absolute,second
+ch_test_8,long discounted,,test,couch,long,discounted,absolute,first
+tv_filler_1,,questionable,filler,tv,,,,
+tv_filler_2,,questionable,filler,tv,,,,
+tv_filler_3,,acceptable,filler,tv,,,,
+tv_filler_4,,acceptable,filler,tv,,,,
+tv_filler_5,,acceptable,filler,tv,,,,
+tv_filler_6,,unacceptable,filler,tv,,,,
+tv_filler_7,,unacceptable,filler,tv,,,,
+tv_filler_8,,unacceptable,filler,tv,,,,
+tv_filler_9,,unacceptable,filler,tv,,,,
+tv_filler_10,,acceptable,filler,tv,,,,
+ch_filler_1,,questionable,filler,couch,,,,
+ch_filler_2,,acceptable,filler,couch,,,,
+ch_filler_3,,acceptable,filler,couch,,,,
+ch_filler_4,,questionable,filler,couch,,,,
+ch_filler_5,,questionable,filler,couch,,,,
+ch_filler_6,,acceptable,filler,couch,,,,
+ch_filler_7,,unacceptable,filler,couch,,,,
+ch_filler_8,,unacceptable,filler,couch,,,,
+ch_filler_9,,acceptable,filler,couch,,,,
+ch_filler_10,,unacceptable,filler,couch,,,,
