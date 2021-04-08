@@ -70,8 +70,52 @@ filler_threshold = 0.75
 
 # ╔═╡ 357879b1-371c-4aa7-bfec-d4b853a109cc
 md"""
-## Responses
+## Acceptability judgements
 """
+
+# ╔═╡ 5bc8041c-a195-4c67-b83e-2f2fdfe8059a
+md"""
+## Semantic judgements
+"""
+
+# ╔═╡ 760480fc-6334-4273-be1b-af7882d21636
+function mean_average_precision(responses)
+	precision(k, responses) = count(responses[end - k + 1 : end]) / k
+	recall(k, response) = (count(responses[end - k + 1 : end]) / count(responses))
+	
+	average_precision(responses) = let
+		ranks = 1:length(responses)
+		precisions = map(k -> precision(k, responses), ranks)
+		recalls = let
+			values = [0.0, map(k -> recall(k, responses), ranks)...]
+		end
+		
+		map(ranks) do k
+			(recalls[k] - recalls[k + 1]) * precisions[k]
+		end
+	end
+	
+	return average_precision(responses)
+	
+	inverted_responses = reverse(.!(responses))
+	
+	mean([
+		average_precision(responses), 
+		average_precision(inverted_responses)
+	])	
+end
+
+# ╔═╡ 1314f8c2-6670-4aa0-aa8c-65205e7cae0e
+mean_average_precision([false, false, false, true, true, true])
+
+# ╔═╡ cf46dd2f-93ed-4542-bf4d-ec34949793a6
+mean_average_precision([false, false, true, false, true, true])
+
+# ╔═╡ 6fceb120-39c5-4fe9-a88c-d74e855d09e3
+mean_average_precision([false, true, false, true, false])
+
+# ╔═╡ d4a0fc36-449f-4528-b491-6931acf13306
+mean_average_precision([true, true, true, false, false, false, ])
 
 # ╔═╡ 49f49cf2-b8b2-44cb-9195-2c2752979257
 md"## Import"
@@ -159,20 +203,6 @@ histogram(participant_filler_scores,
 	xlabel = "ratio of fillers correct", ylabel = "# participants"
 )
 
-# ╔═╡ ac52e0d3-fbaf-4329-9a20-e2b03e547b38
-bad_participants = let
-	bad_participants = filter(participants) do p
-		filler_score(p) < 0.6
-	end
-	
-	map(bad_participants) do p
-		prolific_id = results[
-		(results.id .== "intro_prolific_id") .& (results.participant .== p), 
-		"response"
-	][1]
-	end
-end
-
 # ╔═╡ 9574b8c2-db78-496c-87ef-32ed7dd833c2
 function all_responses(participant)
 	p_data = results[results.participant .== participant, :]
@@ -206,12 +236,61 @@ histogram(
 	label = nothing
 )
 
+# ╔═╡ f3498682-38f2-484b-8ab2-29b2efc864ae
+function semantic_judgements(participant, adjective, scenario)
+	res = filter(results) do row
+		all([(row.participant == participant),
+				(row.item_type == "semantic"),
+				(row.scenario == scenario),
+				(row.adj_target == adjective)
+				])
+	end	
+	
+	values_col = adjective == "expensive" ? "stimulus_price" : "stimulus_size"
+
+	sorted = sort(res, values_col)
+	
+	responses = parse.(Bool, sorted.response)
+	values = sorted[:, values_col]
+	
+	responses, values
+end
+
+# ╔═╡ 8ce1cdba-420a-452c-9227-cd08c0a7ee81
+function score_consistency(participant, adjective, scenario)
+	responses, values =  semantic_judgements(participant, adjective, scenario)
+	
+	mean_average_precision(responses)
+end
+
+# ╔═╡ ebc6f844-365d-4cd3-b9c9-56774abb6a01
+map(participants) do p 
+	score_consistency(p, "expensive", "tv")
+end
+
 # ╔═╡ 77ae2222-3b71-439e-80a4-b8b7f957332a
 md"## Filtered results"
 
 # ╔═╡ 1936ac3b-861b-437e-bdc6-5dd4d94f48ce
 function include_participant(participant)
-	filler_score(participant) >= filler_threshold
+	all([
+			filler_score(participant) >= filler_threshold,
+			sd_response(participant) >= 1
+			])
+end
+
+# ╔═╡ ac52e0d3-fbaf-4329-9a20-e2b03e547b38
+bad_participants = let
+	bad_participants = filter(participants) do p
+		!include_participant(p)
+	end
+	
+	map(bad_participants) do p
+		prolific_id = results[
+		(results.id .== "intro_prolific_id") .& (results.participant .== p), 
+		"response"
+	][1]
+	end
 end
 
 # ╔═╡ 9cb8cc07-5159-4212-8339-0192b08a4b4e
@@ -244,17 +323,26 @@ CSV.write("results_filtered.csv", filtered_results)
 # ╠═a43af605-3923-4102-bcb9-777c25c6d52c
 # ╟─eedc17bf-9518-4450-b2f5-352a68ada5ff
 # ╠═6d3d96e0-79f3-436c-9e16-824a88e38fa0
-# ╠═ac52e0d3-fbaf-4329-9a20-e2b03e547b38
 # ╟─357879b1-371c-4aa7-bfec-d4b853a109cc
 # ╠═9574b8c2-db78-496c-87ef-32ed7dd833c2
 # ╠═f00eaadb-d8bd-40cb-85d3-a1cb3043657e
 # ╠═ed8aedd6-943f-44bd-9c81-5c002f8a5eb9
 # ╟─8de065c8-1ce4-484b-b008-fcf7db27a73c
 # ╟─a30ab7e1-1ab1-4cfa-b05d-07becdc1b619
+# ╟─5bc8041c-a195-4c67-b83e-2f2fdfe8059a
+# ╠═ebc6f844-365d-4cd3-b9c9-56774abb6a01
+# ╠═1314f8c2-6670-4aa0-aa8c-65205e7cae0e
+# ╠═cf46dd2f-93ed-4542-bf4d-ec34949793a6
+# ╠═6fceb120-39c5-4fe9-a88c-d74e855d09e3
+# ╠═d4a0fc36-449f-4528-b491-6931acf13306
+# ╠═f3498682-38f2-484b-8ab2-29b2efc864ae
+# ╠═760480fc-6334-4273-be1b-af7882d21636
+# ╠═8ce1cdba-420a-452c-9227-cd08c0a7ee81
 # ╟─49f49cf2-b8b2-44cb-9195-2c2752979257
 # ╠═254b6cda-8c9c-11eb-1c41-353023a58eea
 # ╠═047ecfd6-37ca-4a1c-91a7-2638faaa2bb6
 # ╟─77ae2222-3b71-439e-80a4-b8b7f957332a
+# ╠═ac52e0d3-fbaf-4329-9a20-e2b03e547b38
 # ╠═1936ac3b-861b-437e-bdc6-5dd4d94f48ce
 # ╠═9cb8cc07-5159-4212-8339-0192b08a4b4e
 # ╠═06fe2b77-b932-46c7-a712-5dfe670c710a

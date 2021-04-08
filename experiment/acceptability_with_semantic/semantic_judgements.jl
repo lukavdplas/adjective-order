@@ -144,13 +144,16 @@ end
 
 # ╔═╡ 647f7087-9313-43ec-aa98-eb1b9c138802
 function plot_selection_probabilities(data::DataFrame, scale::String; kwargs...)
-	stimuli_ids = unique(data.id)
+	colname = "stimulus_" * scale
 	
-	sorted_ids = sort(stimuli_ids, by= id -> measure(id, scale))
+	measures = (sort ∘ unique)(data[:, colname ])
 	
-	measures = measure.(sorted_ids, scale)
-	probabilities = map(sorted_ids) do id
-		selection_probability(id, data)
+	probabilities = map(measures) do value
+		items =  filter(data) do row
+			row[colname] == value
+		end
+		responses = parse.(Bool, items.response)
+		count(responses) / length(responses)
 	end
 	
 	plot(measures, probabilities,
