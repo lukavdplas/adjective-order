@@ -78,9 +78,7 @@ md"""
 
 # ╔═╡ f8b4c2f0-3ed9-4225-a40d-62008ec51754
 let
-	times = map(item_results[:, "time"]) do time
-		minimum([time, 20])
-	end
+	times = min.(item_results.time, 20)
 	
 	histogram(
 		times,

@@ -30,6 +30,17 @@ md"""
 ### Gender
 """
 
+# ╔═╡ fa7ba658-27ac-47a8-bbff-243515bd2c53
+function format_counts(data, item; name = missing)
+	item_data = filter(row -> row.id == item, data)
+	grouped = groupby(item_data, :response)
+	table = combine(grouped, nrow)
+	rename(table,
+		:response => name,
+		:nrow => "N"
+	)
+end
+
 # ╔═╡ 1ee0a1a6-4723-4e7c-80d8-717da6664749
 md"""
 ## Duration
@@ -46,17 +57,17 @@ function filler_correct_count(data; absolute = true)
 	is_positive(response) = response ∈ ["4", "5"]
 	is_negative(response) = response ∈ ["1", "2"]
 	
-	true_positives = data[
-		(data.filler_acceptability .== "acceptable") .& is_positive.(data.response),
-		:]
+	true_positives = filter(data) do row
+		(row.filler_acceptability == "acceptable") && is_positive(row.response)
+	end
 	
-	true_negatives = data[
-		(data.filler_acceptability .== "unacceptable") .& is_negative.(data.response),
-		:]
+	true_negatives = filter(data) do row
+		(row.filler_acceptability == "unacceptable") && is_negative(row.response)
+	end
 	
-	total = data[
-		(data.filler_acceptability .== "acceptable") .| (data.filler_acceptability .== "unacceptable"),
-		:]
+	total = filter(data) do row
+		(row.filler_acceptability == "acceptable") || (row.filler_acceptability == "unacceptable")
+	end
 	
 	if absolute
 		nrow(true_negatives) + nrow(true_positives)
@@ -79,43 +90,41 @@ md"""
 """
 
 # ╔═╡ 760480fc-6334-4273-be1b-af7882d21636
-function mean_average_precision(responses)
-	precision(k, responses) = count(responses[end - k + 1 : end]) / k
-	recall(k, response) = (count(responses[end - k + 1 : end]) / count(responses))
+function average_precision(responses, values)
+	precision(responses, targets) = count(targets .& responses) / count(responses)
+	recall(responses, targets) = count(targets .& responses) / count(targets)
 	
-	average_precision(responses) = let
-		ranks = 1:length(responses)
-		precisions = map(k -> precision(k, responses), ranks)
-		recalls = let
-			values = [0.0, map(k -> recall(k, responses), ranks)...]
-		end
-		
-		map(ranks) do k
-			(recalls[k] - recalls[k + 1]) * precisions[k]
-		end
+	thresholds = (reverse ∘ sort)(values)
+	
+	precisions = map(thresholds) do threshold
+		targets = values .>= threshold
+		precision(responses, targets)
+	end
+
+	recalls = map(thresholds) do threshold
+		targets = values .>= threshold
+		recall(responses, targets)
+	end
+	append!(recalls, [0.0])
+	
+	sum(1:length(thresholds)) do k			
+		precisions[k] * (recalls[k] - recalls[k + 1])
 	end
 	
-	return average_precision(responses)
-	
-	inverted_responses = reverse(.!(responses))
-	
-	mean([
-		average_precision(responses), 
-		average_precision(inverted_responses)
-	])	
 end
 
-# ╔═╡ 1314f8c2-6670-4aa0-aa8c-65205e7cae0e
-mean_average_precision([false, false, false, true, true, true])
-
-# ╔═╡ cf46dd2f-93ed-4542-bf4d-ec34949793a6
-mean_average_precision([false, false, true, false, true, true])
-
-# ╔═╡ 6fceb120-39c5-4fe9-a88c-d74e855d09e3
-mean_average_precision([false, true, false, true, false])
-
-# ╔═╡ d4a0fc36-449f-4528-b491-6931acf13306
-mean_average_precision([true, true, true, false, false, false, ])
+# ╔═╡ 8f5a4372-fbd6-4aef-a337-6579e0c1e47f
+function score_consistency(data::AbstractDataFrame)
+	filtered = filter(row -> row.item_type == "semantic", data)
+	
+	adjective = first(data.adj_target)
+	values_col = adjective == "expensive" ? "stimulus_price" : "stimulus_size"
+	
+	responses = parse.(Bool, filtered.response)
+	values = filtered[:, values_col]
+	
+	average_precision(responses, values)
+end
 
 # ╔═╡ 49f49cf2-b8b2-44cb-9195-2c2752979257
 md"## Import"
@@ -126,32 +135,7 @@ results = CSV.read(
 )
 
 # ╔═╡ 7bf19152-9f92-420f-9057-a954499179f3
-any(results[results.id .== "intro_native", "response"] .!= "Yes")
-
-# ╔═╡ 049824e6-e822-4636-b167-95bdbccf374a
-function count_values(data, item; normalise = true)
-	values = results[results.id .== item, "response"]
-	levels = (sort ∘ unique)(values)
-	sizes = map(levels) do level
-		if normalise
-			 count(values .== level) / length(values)
-		else
-			count(values .== level)
-		end
-	end
-	
-	levels, sizes
-end
-
-# ╔═╡ fa7ba658-27ac-47a8-bbff-243515bd2c53
-function format_counts(data, item; name = missing)
-	levels, sizes = count_values(data, item, normalise = false)
-	
-	DataFrame(
-		(ismissing(name) ? item : name) => levels,
-		"total" => sizes
-	)
-end
+any(results[results.id .== "intro_native", :response] .!= "Yes")
 
 # ╔═╡ ecb597d1-427d-4a70-85c0-ac6ec588a60c
 format_counts(results, "intro_other_langs", name = "other languages")
@@ -159,11 +143,8 @@ format_counts(results, "intro_other_langs", name = "other languages")
 # ╔═╡ f407b39a-c0b0-48d5-b429-6a9a976aaa33
 format_counts(results, "intro_gender", name = "gender")
 
-# ╔═╡ 2292b6db-26a0-4cde-b3d6-93abc237d6bb
-prolific_ids = (sort ∘ unique)(results[results.id .== "intro_prolific_id", "response"])
-
 # ╔═╡ 181dc0ec-bc78-4fed-8288-d25fae5ebc62
-durations = results[results.id .== "time_total", "time"] ./ 60
+durations = results[results.id .== "time_total", :time] ./ 60
 
 # ╔═╡ 57f4fe1a-aaab-410c-bbb7-967bf7f4c50b
 histogram(
@@ -185,16 +166,17 @@ end
 participants = unique(results.participant) ;
 
 # ╔═╡ 0e5b5a94-e6b1-42d6-bdee-31a2ddfad218
-filler_results = results[results.item_type .== "filler", :] ;
-
-# ╔═╡ 4bb6b8a2-fa0b-4323-8461-a969a44fb51c
-function filler_score(participant)
-	p_results = filler_results[filler_results.participant .== participant, :]
-	filler_correct_count(p_results, absolute = false)
-end
+filler_results = filter(row -> row.item_type .== "filler", results) ;
 
 # ╔═╡ a43af605-3923-4102-bcb9-777c25c6d52c
-participant_filler_scores = filler_score.(participants)
+participant_filler_scores = let
+	grouped = groupby(filler_results, :participant)
+	df = combine(grouped) do participant_data
+		filler_correct_count(participant_data, absolute = false)
+	end
+	
+	df.x1
+end
 
 # ╔═╡ eedc17bf-9518-4450-b2f5-352a68ada5ff
 histogram(participant_filler_scores,
@@ -205,10 +187,11 @@ histogram(participant_filler_scores,
 
 # ╔═╡ 9574b8c2-db78-496c-87ef-32ed7dd833c2
 function all_responses(participant)
-	p_data = results[results.participant .== participant, :]
-	item_data = p_data[
-		(p_data.item_type .== "filler") .| (p_data.item_type .== "test"), 
-		:]
+	p_data = filter(row -> row.participant .== participant, results)
+	item_data = filter(p_data) do row
+		(row.item_type == "filler") || (row.item_type .== "test")
+	end
+	
 	responses = parse.(Int64, item_data.response)
 end
 
@@ -236,6 +219,24 @@ histogram(
 	label = nothing
 )
 
+# ╔═╡ 7f60742f-eb48-4a91-abb0-1940bc289107
+semantic_results = filter(row -> row.item_type == "semantic", results) ;
+
+# ╔═╡ ad88b5e2-1108-421c-b44d-951bd04fcd19
+consistency_scores = let
+	grouped = groupby(semantic_results, [:participant, :adj_target, :scenario])
+	combined = combine(score_consistency, grouped)
+	rename(combined, :x1 => :AP)
+end
+
+# ╔═╡ a0642a75-e450-442f-8d1a-d0bfdd94aede
+histogram(
+	consistency_scores.AP,
+	legend = nothing,
+	xlabel = "average precision of semantic classifications",
+	ylabel = "# observations",
+)
+
 # ╔═╡ f3498682-38f2-484b-8ab2-29b2efc864ae
 function semantic_judgements(participant, adjective, scenario)
 	res = filter(results) do row
@@ -256,23 +257,16 @@ function semantic_judgements(participant, adjective, scenario)
 	responses, values
 end
 
-# ╔═╡ 8ce1cdba-420a-452c-9227-cd08c0a7ee81
-function score_consistency(participant, adjective, scenario)
-	responses, values =  semantic_judgements(participant, adjective, scenario)
-	
-	mean_average_precision(responses)
-end
-
-# ╔═╡ ebc6f844-365d-4cd3-b9c9-56774abb6a01
-map(participants) do p 
-	score_consistency(p, "expensive", "tv")
-end
-
 # ╔═╡ 77ae2222-3b71-439e-80a4-b8b7f957332a
 md"## Filtered results"
 
 # ╔═╡ 1936ac3b-861b-437e-bdc6-5dd4d94f48ce
 function include_participant(participant)
+	filler_score(participant) = let
+		pdata = filter(row -> row.participant == participant, filler_results)
+		score = filler_correct_count(pdata, absolute = false)
+	end
+	
 	all([
 			filler_score(participant) >= filler_threshold,
 			sd_response(participant) >= 1
@@ -308,9 +302,7 @@ CSV.write("results_filtered.csv", filtered_results)
 # ╟─ecb597d1-427d-4a70-85c0-ac6ec588a60c
 # ╟─4e58b1a9-e516-43c3-a12d-a03bf826b63d
 # ╟─f407b39a-c0b0-48d5-b429-6a9a976aaa33
-# ╠═049824e6-e822-4636-b167-95bdbccf374a
 # ╠═fa7ba658-27ac-47a8-bbff-243515bd2c53
-# ╠═2292b6db-26a0-4cde-b3d6-93abc237d6bb
 # ╟─1ee0a1a6-4723-4e7c-80d8-717da6664749
 # ╠═181dc0ec-bc78-4fed-8288-d25fae5ebc62
 # ╟─57f4fe1a-aaab-410c-bbb7-967bf7f4c50b
@@ -319,7 +311,6 @@ CSV.write("results_filtered.csv", filtered_results)
 # ╠═2a205bc0-702b-44ee-aaab-a3dd39f64a9b
 # ╠═0e5b5a94-e6b1-42d6-bdee-31a2ddfad218
 # ╠═25d7774c-fafb-4c99-8a72-81829f2e8030
-# ╠═4bb6b8a2-fa0b-4323-8461-a969a44fb51c
 # ╠═a43af605-3923-4102-bcb9-777c25c6d52c
 # ╟─eedc17bf-9518-4450-b2f5-352a68ada5ff
 # ╠═6d3d96e0-79f3-436c-9e16-824a88e38fa0
@@ -330,14 +321,12 @@ CSV.write("results_filtered.csv", filtered_results)
 # ╟─8de065c8-1ce4-484b-b008-fcf7db27a73c
 # ╟─a30ab7e1-1ab1-4cfa-b05d-07becdc1b619
 # ╟─5bc8041c-a195-4c67-b83e-2f2fdfe8059a
-# ╠═ebc6f844-365d-4cd3-b9c9-56774abb6a01
-# ╠═1314f8c2-6670-4aa0-aa8c-65205e7cae0e
-# ╠═cf46dd2f-93ed-4542-bf4d-ec34949793a6
-# ╠═6fceb120-39c5-4fe9-a88c-d74e855d09e3
-# ╠═d4a0fc36-449f-4528-b491-6931acf13306
+# ╠═7f60742f-eb48-4a91-abb0-1940bc289107
 # ╠═f3498682-38f2-484b-8ab2-29b2efc864ae
 # ╠═760480fc-6334-4273-be1b-af7882d21636
-# ╠═8ce1cdba-420a-452c-9227-cd08c0a7ee81
+# ╠═8f5a4372-fbd6-4aef-a337-6579e0c1e47f
+# ╠═ad88b5e2-1108-421c-b44d-951bd04fcd19
+# ╠═a0642a75-e450-442f-8d1a-d0bfdd94aede
 # ╟─49f49cf2-b8b2-44cb-9195-2c2752979257
 # ╠═254b6cda-8c9c-11eb-1c41-353023a58eea
 # ╠═047ecfd6-37ca-4a1c-91a7-2638faaa2bb6
