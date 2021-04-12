@@ -14,7 +14,7 @@ md"## Import raw results"
 
 # ╔═╡ 696d6c47-ecc6-425d-bee2-3fc12e2322a7
 results_raw = CSV.read(
-	"results_raw.csv", DataFrame,
+	"results/results_raw.csv", DataFrame,
 	skipto = 4
 ) ;
 
@@ -136,7 +136,7 @@ item_data = let
 end
 
 # ╔═╡ a037c002-3f6c-470a-9b86-400746a13a9d
-CSV.write("item_data.csv", item_data)
+CSV.write("materials/item_data.csv", item_data)
 
 # ╔═╡ 0e60eeb7-3bef-45c7-91fa-7cbca475923a
 md"## Format results"
@@ -248,7 +248,7 @@ semantic_items = let
 end
 
 # ╔═╡ 69044955-6953-4517-984a-a3032ad72185
-stimuli_data = CSV.read("stimuli_data.csv")
+stimuli_data = CSV.read("materials/stimuli_data.csv")
 
 # ╔═╡ 43129d45-0772-467b-ada9-4c7337423973
 function parse_answer(answer, scenario)	
@@ -501,7 +501,7 @@ all_results = [
 	time_results] ;
 
 # ╔═╡ 022a4a99-8e10-4204-a8af-0388f8c56f05
-CSV.write("results.csv", all_results)
+CSV.write("results/results.csv", all_results)
 
 # ╔═╡ Cell order:
 # ╠═a75d2178-8e27-11eb-383b-9d6053581a5a

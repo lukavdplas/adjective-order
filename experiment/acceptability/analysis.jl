@@ -17,7 +17,7 @@ md"""
 
 # ╔═╡ fb243fdd-76ce-4ea2-b38c-d3450e9b01b1
 all_results =  CSV.read(
-	"results_filtered.csv", DataFrame,
+	"results/results_filtered.csv", DataFrame,
 )
 
 # ╔═╡ 7ade9d08-b89d-477c-8ede-c3cdbf1d4cd3

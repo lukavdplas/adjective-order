@@ -16,10 +16,10 @@ md"""
 """
 
 # ╔═╡ 8358c692-93b8-11eb-20cc-7ff7a8a3ed34
-results = CSV.read("results_filtered.csv", DataFrame) ;
+results = CSV.read("results/results_filtered.csv", DataFrame) ;
 
 # ╔═╡ 14e4583e-e403-43f5-ac84-68650cba71db
-stimuli_data = CSV.read("stimuli_data.csv", DataFrame)
+stimuli_data = CSV.read("materials/stimuli_data.csv", DataFrame)
 
 # ╔═╡ 0e54595b-f569-4201-b355-5ae56f3ddfa8
 semantic_results = results[results.item_type .== "semantic", :]

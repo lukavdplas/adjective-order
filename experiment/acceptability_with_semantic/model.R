@@ -1,6 +1,6 @@
 library(ordinal)
 
-results = read.csv("results_filtered.csv")
+results = read.csv("results/results_filtered.csv")
 
 test_results = subset(results, item_type == "test")
 
@@ -27,7 +27,7 @@ summary(m_absolute)
 
 # take two experiments together
 
-aj_results = read.csv("../acceptability/results_filtered.csv")
+aj_results = read.csv("../acceptability/results/results_filtered.csv")
 aj_results$participant = sapply(aj_results$participant, function(x){100 + x})
 aj_results$stimulus_size = sapply(aj_results$id, function(x){NULL})
 aj_results$stimulus_price = sapply(aj_results$id, function(x){NULL})

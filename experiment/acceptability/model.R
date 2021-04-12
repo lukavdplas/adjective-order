@@ -1,6 +1,6 @@
 library(ordinal)
 
-results = read.csv("results_filtered.csv")
+results = read.csv("results/results_filtered.csv")
 
 test_results = subset(results, item_type == "test")
 

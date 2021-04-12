@@ -78,7 +78,7 @@ md"## Import"
 
 # ╔═╡ 047ecfd6-37ca-4a1c-91a7-2638faaa2bb6
 results = CSV.read(
-	"results.csv", DataFrame,
+	"results/results.csv", DataFrame,
 )
 
 # ╔═╡ 7bf19152-9f92-420f-9057-a954499179f3
@@ -220,7 +220,7 @@ filtered_results = filter(results) do row
 end
 
 # ╔═╡ 06fe2b77-b932-46c7-a712-5dfe670c710a
-CSV.write("results_filtered.csv", filtered_results)
+CSV.write("results/results_filtered.csv", filtered_results)
 
 # ╔═╡ Cell order:
 # ╟─2a989224-fc5e-4220-a0e6-9d38ff7eba0b
