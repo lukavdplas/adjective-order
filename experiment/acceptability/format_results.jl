@@ -16,6 +16,15 @@ begin
     using DataFrames, CSV, Statistics
 end
 
+# ╔═╡ 2605ff45-8cd0-471a-9226-2eee12a58a01
+md"""
+# Formatting results
+
+This script takes the raw output from the survey and converts it to a nice table.
+
+The raw output is not public, because it is not completely anonymous, so you can't run the script.
+"""
+
 # ╔═╡ 8ea8d699-8c8f-4f3f-9b14-581ccff6f4a5
 md"## Import raw results"
 
@@ -307,6 +316,7 @@ all_results = [item_results ; meta_results ; time_results] ;
 CSV.write("results/results.csv", all_results)
 
 # ╔═╡ Cell order:
+# ╟─2605ff45-8cd0-471a-9226-2eee12a58a01
 # ╠═a75d2178-8e27-11eb-383b-9d6053581a5a
 # ╟─8ea8d699-8c8f-4f3f-9b14-581ccff6f4a5
 # ╠═696d6c47-ecc6-425d-bee2-3fc12e2322a7
