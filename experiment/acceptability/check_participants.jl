@@ -30,6 +30,17 @@ md"""
 ### Gender
 """
 
+# ╔═╡ fa7ba658-27ac-47a8-bbff-243515bd2c53
+function format_counts(data, item; name = missing)
+	item_data = filter(row -> row.id == item, data)
+	grouped = groupby(item_data, :response)
+	table = combine(grouped, nrow)
+	rename(table,
+		:response => name,
+		:nrow => "N"
+	)
+end
+
 # ╔═╡ 1ee0a1a6-4723-4e7c-80d8-717da6664749
 md"""
 ## Duration
@@ -84,39 +95,11 @@ results = CSV.read(
 # ╔═╡ 7bf19152-9f92-420f-9057-a954499179f3
 any(results[results.id .== "intro_native", "response"] .!= "Yes")
 
-# ╔═╡ 049824e6-e822-4636-b167-95bdbccf374a
-function count_values(data, item; normalise = true)
-	values = results[results.id .== item, "response"]
-	levels = (sort ∘ unique)(values)
-	sizes = map(levels) do level
-		if normalise
-			 count(values .== level) / length(values)
-		else
-			count(values .== level)
-		end
-	end
-	
-	levels, sizes
-end
-
-# ╔═╡ fa7ba658-27ac-47a8-bbff-243515bd2c53
-function format_counts(data, item; name = missing)
-	levels, sizes = count_values(data, item, normalise = false)
-	
-	DataFrame(
-		(ismissing(name) ? item : name) => levels,
-		"total" => sizes
-	)
-end
-
 # ╔═╡ ecb597d1-427d-4a70-85c0-ac6ec588a60c
 format_counts(results, "intro_other_langs", name = "other languages")
 
 # ╔═╡ f407b39a-c0b0-48d5-b429-6a9a976aaa33
 format_counts(results, "intro_gender", name = "gender")
-
-# ╔═╡ 2292b6db-26a0-4cde-b3d6-93abc237d6bb
-prolific_ids = (sort ∘ unique)(results[results.id .== "intro_prolific_id", "response"])
 
 # ╔═╡ 181dc0ec-bc78-4fed-8288-d25fae5ebc62
 durations = results[results.id .== "time_total", "time"] ./ 60
@@ -158,20 +141,6 @@ histogram(participant_filler_scores,
 	label = nothing,
 	xlabel = "ratio of fillers correct", ylabel = "# participants"
 )
-
-# ╔═╡ ac52e0d3-fbaf-4329-9a20-e2b03e547b38
-bad_participants = let
-	bad_participants = filter(participants) do p
-		filler_score(p) < 0.6
-	end
-	
-	map(bad_participants) do p
-		prolific_id = results[
-		(results.id .== "intro_prolific_id") .& (results.participant .== p), 
-		"response"
-	][1]
-	end
-end
 
 # ╔═╡ 9574b8c2-db78-496c-87ef-32ed7dd833c2
 function all_responses(participant)
@@ -229,9 +198,7 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╟─ecb597d1-427d-4a70-85c0-ac6ec588a60c
 # ╟─4e58b1a9-e516-43c3-a12d-a03bf826b63d
 # ╟─f407b39a-c0b0-48d5-b429-6a9a976aaa33
-# ╠═049824e6-e822-4636-b167-95bdbccf374a
 # ╠═fa7ba658-27ac-47a8-bbff-243515bd2c53
-# ╠═2292b6db-26a0-4cde-b3d6-93abc237d6bb
 # ╟─1ee0a1a6-4723-4e7c-80d8-717da6664749
 # ╠═181dc0ec-bc78-4fed-8288-d25fae5ebc62
 # ╟─57f4fe1a-aaab-410c-bbb7-967bf7f4c50b
@@ -244,7 +211,6 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╠═a43af605-3923-4102-bcb9-777c25c6d52c
 # ╟─eedc17bf-9518-4450-b2f5-352a68ada5ff
 # ╠═6d3d96e0-79f3-436c-9e16-824a88e38fa0
-# ╠═ac52e0d3-fbaf-4329-9a20-e2b03e547b38
 # ╟─357879b1-371c-4aa7-bfec-d4b853a109cc
 # ╠═9574b8c2-db78-496c-87ef-32ed7dd833c2
 # ╠═f00eaadb-d8bd-40cb-85d3-a1cb3043657e

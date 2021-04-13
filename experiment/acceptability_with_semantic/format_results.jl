@@ -408,7 +408,7 @@ md"### Meta questions"
 
 # ╔═╡ d802d624-f0de-4fcb-92b6-8c8f1953d192
 meta_items = [
-	"intro_prolific_id", "intro_native", "intro_other_langs", "intro_gender"] ;
+	"intro_native", "intro_other_langs", "intro_gender"] ;
 
 # ╔═╡ 2b0c6db5-0362-493f-9560-ee65c295c8c1
 meta_results = let
