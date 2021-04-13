@@ -6,7 +6,17 @@ using InteractiveUtils
 
 # ╔═╡ ab04a609-f17b-4360-ba3c-784bc89e192d
 begin
-	using CSV, DataFrames, Plots, StatsPlots, Turing, MCMCChains
+    import Pkg
+    Pkg.activate(mktempdir())
+    Pkg.add([
+        Pkg.PackageSpec(name="CSV", version="0.8"),
+        Pkg.PackageSpec(name="DataFrames", version="0.22"),
+        Pkg.PackageSpec(name="Plots", version="1"),
+        Pkg.PackageSpec(name="StatsPlots", version="0.14"),
+        Pkg.PackageSpec(name="Turing", version="0.15"),
+        Pkg.PackageSpec(name="MCMCChains", version="4"),
+    ])
+    using CSV, DataFrames, Plots, StatsPlots, Turing, MCMCChains
 end
 
 # ╔═╡ 2e35c0c3-e337-4e8d-9dca-8b8a2e0bc962
@@ -26,9 +36,6 @@ md"## Model definition"
 		sample[n] ~ Normal(μ, σ)
 	end
 end
-
-# ╔═╡ 3ad4028c-9436-4510-98ea-2d40a130690b
-plot(0:100, InverseGamma(1,1))
 
 # ╔═╡ a293cbf7-5b32-479a-9438-b476b8385cb2
 md"""
@@ -173,7 +180,6 @@ end
 # ╠═cb7e8e40-4bf7-4596-8268-b7a0a9abe0a7
 # ╟─ecbc0b9e-f869-44e5-8bf1-2e828a526e3c
 # ╠═075307aa-7aa7-48d1-9371-661801f1fb49
-# ╠═3ad4028c-9436-4510-98ea-2d40a130690b
 # ╟─a293cbf7-5b32-479a-9438-b476b8385cb2
 # ╠═61b5e56b-3a33-4838-bbc7-7bc5226fafe4
 # ╠═7841ae4a-f9da-4ff1-8f71-ce2290e87a71

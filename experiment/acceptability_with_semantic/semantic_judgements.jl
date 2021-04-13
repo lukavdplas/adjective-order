@@ -5,8 +5,17 @@ using Markdown
 using InteractiveUtils
 
 # ╔═╡ 0c33a28a-2419-452c-bb7f-62e0b068418a
-let
-	using CSV, DataFrames, Plots, Distributions, StatsPlots
+begin
+    import Pkg
+    Pkg.activate(mktempdir())
+    Pkg.add([
+        Pkg.PackageSpec(name="CSV", version="0.8"),
+        Pkg.PackageSpec(name="DataFrames", version="0.22"),
+        Pkg.PackageSpec(name="Plots", version="1"),
+        Pkg.PackageSpec(name="PlotThemes", version="2"),
+    ])
+    using CSV, DataFrames, Plots, PlotThemes
+
 	theme(:wong, legend=:outerright)
 end
 

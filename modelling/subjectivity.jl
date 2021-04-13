@@ -6,7 +6,13 @@ using InteractiveUtils
 
 # ╔═╡ 14d59268-9967-11eb-3a11-b388759a33c4
 begin
-	using CSV, DataFrames, Statistics
+    import Pkg
+    Pkg.activate(mktempdir())
+    Pkg.add([
+        Pkg.PackageSpec(name="CSV", version="0.8"),
+        Pkg.PackageSpec(name="DataFrames", version="0.22"),
+    ])
+    using CSV, DataFrames, Statistics
 end
 
 # ╔═╡ 27baafa7-e81f-43d5-b853-7b7eb6cf7fa6
@@ -47,7 +53,7 @@ end
 
 # ╔═╡ df716478-9bd3-4896-b0ff-8afe398e590c
 results = CSV.read(
-	"../experiment/acceptability_with_semantic/results_filtered.csv",
+	"../experiment/acceptability_with_semantic/results/results_filtered.csv",
 	DataFrame
 ) ;
 

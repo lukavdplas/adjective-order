@@ -6,8 +6,19 @@ using InteractiveUtils
 
 # ╔═╡ 53c045a8-7032-11eb-1e32-979e2d2b7846
 begin
-	using DataFrames, CSV, Statistics, Plots, StatsPlots
-	theme(:wong, legend=:outerright)
+	#temp environment
+    import Pkg
+    Pkg.activate(mktempdir())
+    Pkg.add([
+        Pkg.PackageSpec(name="DataFrames", version="0.22"),
+        Pkg.PackageSpec(name="CSV", version="0.8"),
+        Pkg.PackageSpec(name="Plots", version="1"),
+    ])
+	
+	#import packages
+    using DataFrames, CSV, Statistics, Plots
+	
+	theme(:wong, legend=:outerright) #plot theme
 end
 
 # ╔═╡ 75ed3aeb-ca7c-4db8-82e9-7fdd7b394b97

@@ -6,7 +6,14 @@ using InteractiveUtils
 
 # ╔═╡ a75d2178-8e27-11eb-383b-9d6053581a5a
 begin
-	using DataFrames, CSV, Statistics
+    import Pkg
+    Pkg.activate(mktempdir())
+    Pkg.add([
+        Pkg.PackageSpec(name="DataFrames", version="0.22"),
+        Pkg.PackageSpec(name="CSV", version="0.8"),
+    ])
+	
+    using DataFrames, CSV, Statistics
 end
 
 # ╔═╡ 8ea8d699-8c8f-4f3f-9b14-581ccff6f4a5

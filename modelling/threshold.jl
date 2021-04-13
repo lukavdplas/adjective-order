@@ -15,7 +15,19 @@ end
 
 # ╔═╡ 9e79889a-9baf-11eb-1e2d-59906f90ea82
 begin
-	using CSV, DataFrames, Distributions, Plots, StatsPlots, PlutoUI
+    import Pkg
+    Pkg.activate(mktempdir())
+    Pkg.add([
+        Pkg.PackageSpec(name="CSV", version="0.8"),
+        Pkg.PackageSpec(name="DataFrames", version="0.22"),
+        Pkg.PackageSpec(name="Distributions", version="0.24"),
+        Pkg.PackageSpec(name="Plots", version="1"),
+        Pkg.PackageSpec(name="PlotThemes", version="2"),
+        Pkg.PackageSpec(name="StatsPlots", version="0.14"),
+        Pkg.PackageSpec(name="PlutoUI", version="0.7"),
+    ])
+    using CSV, DataFrames, Distributions, Plots, PlotThemes, StatsPlots, PlutoUI
+
 	theme(:wong, legend = :outerright)
 end
 
@@ -307,10 +319,21 @@ md"""
 """
 
 # ╔═╡ 7e6becae-5be3-4069-b2f6-139f4b02cf92
-function use_adjective(degree, λ, coverage, scale_points, densityf, cumulativef)
+function use_adjective(degree, λ::Number, coverage::Number, 
+		scale_points::AbstractArray, 
+		densityf::Function, cumulativef::Function)
 	sum(filter(θ -> θ <= degree, scale_points)) do θ
 		probability_threshold(θ, λ, coverage, scale_points, densityf, cumulativef)
 	end
+end
+
+# ╔═╡ 4f454802-5399-43dd-928e-89506a78da28
+function use_adjective(degree, θ_probabilities::AbstractArray,
+		scale_points::AbstractArray)
+
+	sum(filter(i -> scale_points[i] <= degree, 1:length(scale_points))) do i
+		θ_probabilities[i]
+		end
 end
 
 # ╔═╡ 899f2e2a-ab04-412f-97b2-90269cc14cf6
@@ -325,15 +348,18 @@ md"λ : $(ua_example_λ)"
 # ╔═╡ 5318b14a-e95b-4324-85bd-8a8094351cad
 md"Coverage parameter: $(ua_example_coverage)"
 
+# ╔═╡ edd92128-c71e-40da-b325-32425c9d1cf0
+ua_example_θ_probabilities = map(couch_price_scale_points) do θ
+	probability_threshold(θ, ua_example_λ, ua_example_coverage, 
+		couch_price_scale_points, couch_price_density, couch_price_cumulative)
+end
+
 # ╔═╡ 55869021-3709-412a-a216-92c035a90f6a
 function plot_use_adjective(λ, coverage)
 	ua(d) = use_adjective(
 		d, 
-		λ,
-		coverage,
-		couch_price_scale_points, 
-		couch_price_density, 
-		couch_price_cumulative)
+		ua_example_θ_probabilities,
+		couch_price_scale_points)
 	
 	plot(couch_price_scale_points,
 		ua,
@@ -387,9 +413,11 @@ plot_use_adjective(ua_example_λ, ua_example_coverage)
 # ╠═33090a3c-ce88-40aa-b3ee-ba6eb2b6b593
 # ╟─0a0715d3-8f0b-4e26-b54d-8aa3cdc6ced6
 # ╠═7e6becae-5be3-4069-b2f6-139f4b02cf92
+# ╠═4f454802-5399-43dd-928e-89506a78da28
 # ╟─b522ae78-c917-47ca-83c9-ff43771b0603
 # ╟─899f2e2a-ab04-412f-97b2-90269cc14cf6
 # ╟─5318b14a-e95b-4324-85bd-8a8094351cad
 # ╟─d2d4c6d6-d440-4442-979d-76c9a0e76b00
 # ╠═96112ecc-8f1f-4bb1-b6c5-a67cfa8a00a9
+# ╠═edd92128-c71e-40da-b325-32425c9d1cf0
 # ╠═55869021-3709-412a-a216-92c035a90f6a
