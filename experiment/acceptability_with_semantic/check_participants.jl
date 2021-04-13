@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -18,6 +18,13 @@ begin
 
 	theme(:wong, legend=:outerright) #plot theme
 end
+
+# ╔═╡ d03b1c2f-eba4-41ec-ae2b-5c89152a9212
+md"""
+# Check participant-level data
+
+Collect some information at participant-level (like demographics) and filter participants.
+"""
 
 # ╔═╡ 2a989224-fc5e-4220-a0e6-9d38ff7eba0b
 md"""
@@ -175,7 +182,7 @@ end
 participants = unique(results.participant) ;
 
 # ╔═╡ 0e5b5a94-e6b1-42d6-bdee-31a2ddfad218
-filler_results = filter(row -> row.item_type .== "filler", results) ;
+filler_results = filter(row -> row.item_type .== "filler", results)
 
 # ╔═╡ a43af605-3923-4102-bcb9-777c25c6d52c
 participant_filler_scores = let
@@ -201,7 +208,7 @@ function all_responses(participant)
 		(row.item_type == "filler") || (row.item_type .== "test")
 	end
 	
-	responses = parse.(Int64, item_data.response)
+	responses = parse.(Float64, item_data.response)
 end
 
 # ╔═╡ f00eaadb-d8bd-40cb-85d3-a1cb3043657e
@@ -267,7 +274,9 @@ function semantic_judgements(participant, adjective, scenario)
 end
 
 # ╔═╡ 77ae2222-3b71-439e-80a4-b8b7f957332a
-md"## Filtered results"
+md"""## Filtered results
+Filter participants and export filtered results.
+"""
 
 # ╔═╡ 1936ac3b-861b-437e-bdc6-5dd4d94f48ce
 function include_participant(participant)
@@ -291,12 +300,13 @@ end
 CSV.write("results/results_filtered.csv", filtered_results)
 
 # ╔═╡ Cell order:
+# ╟─d03b1c2f-eba4-41ec-ae2b-5c89152a9212
 # ╟─2a989224-fc5e-4220-a0e6-9d38ff7eba0b
-# ╟─7bf19152-9f92-420f-9057-a954499179f3
+# ╠═7bf19152-9f92-420f-9057-a954499179f3
 # ╟─5624a07b-8ae8-4985-b720-8accec48bd1b
-# ╟─ecb597d1-427d-4a70-85c0-ac6ec588a60c
+# ╠═ecb597d1-427d-4a70-85c0-ac6ec588a60c
 # ╟─4e58b1a9-e516-43c3-a12d-a03bf826b63d
-# ╟─f407b39a-c0b0-48d5-b429-6a9a976aaa33
+# ╠═f407b39a-c0b0-48d5-b429-6a9a976aaa33
 # ╠═fa7ba658-27ac-47a8-bbff-243515bd2c53
 # ╟─1ee0a1a6-4723-4e7c-80d8-717da6664749
 # ╠═181dc0ec-bc78-4fed-8288-d25fae5ebc62
@@ -325,7 +335,7 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╟─49f49cf2-b8b2-44cb-9195-2c2752979257
 # ╠═254b6cda-8c9c-11eb-1c41-353023a58eea
 # ╠═047ecfd6-37ca-4a1c-91a7-2638faaa2bb6
-# ╟─77ae2222-3b71-439e-80a4-b8b7f957332a
+# ╠═77ae2222-3b71-439e-80a4-b8b7f957332a
 # ╠═1936ac3b-861b-437e-bdc6-5dd4d94f48ce
 # ╠═9cb8cc07-5159-4212-8339-0192b08a4b4e
 # ╠═06fe2b77-b932-46c7-a712-5dfe670c710a
