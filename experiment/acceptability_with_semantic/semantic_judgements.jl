@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -14,10 +14,17 @@ begin
         Pkg.PackageSpec(name="Plots", version="1"),
         Pkg.PackageSpec(name="PlotThemes", version="2"),
     ])
-    using CSV, DataFrames, Plots, PlotThemes
+    using CSV, DataFrames, Plots, PlotThemes, Statistics
 
 	theme(:wong, legend=:outerright)
 end
+
+# ╔═╡ ace7cca0-a2c2-40f2-a6c4-29f88bfc6e58
+md"""
+# Semantic judgements
+
+Results on the semantic judgement task
+"""
 
 # ╔═╡ f29b7732-246f-4947-bf15-a3ae6d99682e
 md"""
@@ -172,8 +179,7 @@ function plot_selection_results(adjective, scenario, condition = nothing; kwargs
 	end
 	
 	plot(measures, probabilities,
-		lw = 3,
-		fill = 0, fillalpha = 0.5,
+		fill = 0, linecolor = :black,
 		ylims = (0,1), 
 		xlims = get_bounds(adjective, scenario),
 		label = nothing,
@@ -212,8 +218,7 @@ function plot_thresholds(adjective, scenario, condition = nothing)
 	histogram(thresholds,
 		bins = measures,
 		#normalize = true,
-		lw = 3, linecolor = 1,
-		fill = 0, fillalpha = 0.5,
+		fill = 0,
 		xlims = get_bounds(adjective, scenario),
 		label = nothing,
 		ylabel = "N(threshold | $(scale))",
@@ -237,9 +242,7 @@ function plot_sample_histogram(adjective, scenario, condition = "bimodal"; kwarg
 	histogram(measures,
 		bins = 25,
 		color = 2,
-		linecolor = 2,
-		lw = 3,
-		fill = 0, fillalpha = 0.5,
+		fill = 0,
 		label = nothing;
 		xlabel = scale_label(scale),
 		ylabel = "N($(scale))",
@@ -288,6 +291,7 @@ let
 end
 
 # ╔═╡ Cell order:
+# ╟─ace7cca0-a2c2-40f2-a6c4-29f88bfc6e58
 # ╟─f29b7732-246f-4947-bf15-a3ae6d99682e
 # ╠═0c33a28a-2419-452c-bb7f-62e0b068418a
 # ╠═8358c692-93b8-11eb-20cc-7ff7a8a3ed34

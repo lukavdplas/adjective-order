@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.1
 
 using Markdown
 using InteractiveUtils
@@ -9,12 +9,22 @@ begin
     import Pkg
     Pkg.activate(mktempdir())
     Pkg.add([
-        Pkg.PackageSpec(name="DataFrames", version="0.22"),
         Pkg.PackageSpec(name="CSV", version="0.8"),
+        Pkg.PackageSpec(name="DataFrames", version="0.22"),
+        Pkg.PackageSpec(name="Plots", version="1"),
+        Pkg.PackageSpec(name="PlotThemes", version="2"),
     ])
-
-    using DataFrames, CSV, Statistics
+    using CSV, DataFrames
 end
+
+# ╔═╡ 21c40f3f-f93f-403d-8d10-63d273e4d163
+md"""
+# Format results
+
+This script takes the raw output from the survey and converts it to a neat format for analysis.
+
+The raw output is not public (because it is not anonymous), and the script obviously does not work without it. The rendered web page will give some errors.
+"""
 
 # ╔═╡ 8ea8d699-8c8f-4f3f-9b14-581ccff6f4a5
 md"## Import raw results"
@@ -26,9 +36,9 @@ results_raw = CSV.read(
 ) ;
 
 # ╔═╡ 46db08e0-49eb-447e-82da-9cf2b9551176
-results = let
-	real_responses = results_raw[results_raw.DistributionChannel .== "anonymous", :]
-	finished = real_responses[real_responses.Finished, :]
+results = filter(results_raw) do row
+	row.DistributionChannel == "anonymous" && row.Finished == "True"
+	#exclude previews and unfinished responses
 end
 
 # ╔═╡ 4fe2de19-0adb-405e-a2d5-9e30b5d6794d
@@ -185,7 +195,7 @@ item_results = let
 			#item and response
 			id = item_data[i, "id"]
 			item = id * "_1"
-			response = results[participant, item]		
+			response = Int(results[participant, item])	
 			time = results[participant, id * "_time_Last Click"]
 			
 			#item data
@@ -255,7 +265,7 @@ semantic_items = let
 end
 
 # ╔═╡ 69044955-6953-4517-984a-a3032ad72185
-stimuli_data = CSV.read("materials/stimuli_data.csv")
+stimuli_data = CSV.read("materials/stimuli_data.csv", DataFrame)
 
 # ╔═╡ 43129d45-0772-467b-ada9-4c7337423973
 function parse_answer(answer, scenario)	
@@ -384,7 +394,7 @@ confidence_results = let
 			condition = condition_table[group, item["scenario"]]
 			adjective = item["adjective"]
 			colname = item["id"] * "_1"
-			response = results[participant, colname]
+			response = Int(results[participant, colname])
 			
 			data = Dict(
 				"item_type" => "confidence",
@@ -511,6 +521,7 @@ all_results = [
 CSV.write("results/results.csv", all_results)
 
 # ╔═╡ Cell order:
+# ╟─21c40f3f-f93f-403d-8d10-63d273e4d163
 # ╠═a75d2178-8e27-11eb-383b-9d6053581a5a
 # ╟─8ea8d699-8c8f-4f3f-9b14-581ccff6f4a5
 # ╠═696d6c47-ecc6-425d-bee2-3fc12e2322a7
