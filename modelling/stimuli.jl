@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.1
+# v0.14.2
 
 using Markdown
 using InteractiveUtils
@@ -48,11 +48,9 @@ end
 
 # ╔═╡ a293cbf7-5b32-479a-9438-b476b8385cb2
 md"""
-## Using Distributions
+## Unimodal samples
 
 The easiest approach to go from the sample to a distribution is to use the `fit()` function from `Distributions`.
-
-One disadvantage is that this does not give information about how certain we can be about the optimal fit.
 """
 
 # ╔═╡ 61b5e56b-3a33-4838-bbc7-7bc5226fafe4
@@ -69,36 +67,57 @@ prior_size_ch_unim = fit(Normal,  get_sample("size", "couch", "unimodal"))
 
 # ╔═╡ 19aa3fe8-7ae5-4be2-8e28-5540a42dc760
 md"""
+## Bimodal samples
+
 The `MixtureModel` can be used to represent a bimodal distribution, but `fit` can't be used on mixed models (not weird, this is more complex).
 
+I use the `GaussianMixtures` package to estimate this distributions, but the package does not work with Pluto, so this is done in a separate script with the following code:
 
-As a quick solution, I divide the sample into the upper and lower cluster, and fit each cluster separately. I then combine the two in a mixture model. This somewhat overestimates the distance between the two means.
+```julia
+using GaussianMixtures
+
+parameters(model) = Dict(
+	:w => model.w,
+	:μ => model.μ,
+	:σ => sqrt.(model.Σ)
+	)
+
+gmm_size_tv_bim = let
+   sample = get_sample("size", "tv", "bimodal")
+   GMM(2, Float64.(sample))
+end
+
+params_size_tv_bim = parameters(gmm_size_tv_bim)
+
+gmm_size_ch_bim = let
+    sample = get_sample("size", "couch", "bimodal")
+    GMM(2, Float64.(sample))
+ end
+
+ params_size_ch_bim = parameters(gmm_size_ch_bim)
+```
 """
 
 # ╔═╡ 1f9c8c5c-4d6c-44cd-8b95-00bc44dc4b6b
 prior_size_tv_bim = let
-	sample =  get_sample("size", "tv", "bimodal")
+	weights = [0.5, 0.5]
+	μs = [33.1429, 75.1429]
+	σs = [5.84144, 4.35656]
 	
-	sample_upper = filter(x -> x >= 50, sample)
-	sample_lower = filter(x -> x < 50, sample)
-	
-	prior_upper = fit(Normal, sample_upper)
-	prior_lower = fit(Normal, sample_lower)
-	
-	prior = MixtureModel([prior_upper, prior_lower], [0.5, 0.5])
+	MixtureModel(
+		[Normal(μs[1], σs[1]), Normal(μs[2], σs[2])], 
+		weights)
 end
 
 # ╔═╡ a8a9817c-332c-4b30-a5b6-c1cdc30d20a3
 prior_size_ch_bim = let
-	sample = get_sample("size", "couch", "bimodal")
+	weights = [0.5, 0.5]
+	μs = [105.0, 54.4286]
+	σs = [5.68205, 6.56521]
 	
-	sample_upper = filter(x -> x >= 70, sample)
-	sample_lower = filter(x -> x < 70, sample)
-	
-	prior_upper = fit(Normal, sample_upper)
-	prior_lower = fit(Normal, sample_lower)
-	
-	prior = MixtureModel([prior_upper, prior_lower], [0.5, 0.5])
+	MixtureModel(
+		[Normal(μs[1], σs[1]), Normal(μs[2], σs[2])], 
+		weights)
 end
 
 # ╔═╡ 84499c1a-7089-4b4f-84d7-75179e14a160
