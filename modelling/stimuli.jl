@@ -11,15 +11,9 @@ begin
     Pkg.add([
         Pkg.PackageSpec(name="CSV", version="0.8"),
         Pkg.PackageSpec(name="DataFrames", version="0.22"),
-        Pkg.PackageSpec(name="Plots", version="1"),
-        Pkg.PackageSpec(name="StatsPlots", version="0.14"),
-        Pkg.PackageSpec(name="Turing", version="0.15"),
-        Pkg.PackageSpec(name="MCMCChains", version="4"),
-        Pkg.PackageSpec(name="Optim", version="1"),
+        Pkg.PackageSpec(name="Distributions", version="0.24"),
     ])
-    using CSV, DataFrames, Plots, StatsPlots, Turing, MCMCChains, Optim
-	
-	#using GaussianMixtures
+    using CSV, DataFrames, Distributions
 end
 
 # ╔═╡ 2e35c0c3-e337-4e8d-9dca-8b8a2e0bc962
@@ -107,45 +101,6 @@ prior_size_ch_bim = let
 	prior = MixtureModel([prior_upper, prior_lower], [0.5, 0.5])
 end
 
-# ╔═╡ ecbc0b9e-f869-44e5-8bf1-2e828a526e3c
-md"""## Using Turing"""
-
-# ╔═╡ 075307aa-7aa7-48d1-9371-661801f1fb49
-@model function unimodal_model(sample)
-	σ ~ InverseGamma(2, 3)
-	μ ~ Normal(0, σ)
-	
-	for n in 1:length(sample)
-		sample[n] ~ Normal(μ, σ)
-	end
-end
-
-# ╔═╡ bd3d8b33-791b-461b-8e14-fe0f7657d9ea
-@model function bimodal_model(sample)
-	N = length(sample)
-	
-	σ1 ~ InverseGamma(2, 3)
-	σ2 ~ InverseGamma(2, 3)
-	
-	μ1 ~ Normal(50, σ1)
-	μ2 ~ Normal(50, σ2)
-	
-	weights = [0.5, 0.5]
-	
-	k = Vector(undef, N)
-	
-    for n in 1:N
-		k[n] ~ Categorical(weights)
-		
-		if k[n] == 1
-			sample[n] ~ Normal(μ1, σ1)
-		else
-			sample[n] ~ Normal(μ2, σ2)
-		end
-	end
-	return k
-end
-
 # ╔═╡ 84499c1a-7089-4b4f-84d7-75179e14a160
 md"""
 ## Packages
@@ -164,8 +119,5 @@ md"""
 # ╟─19aa3fe8-7ae5-4be2-8e28-5540a42dc760
 # ╠═1f9c8c5c-4d6c-44cd-8b95-00bc44dc4b6b
 # ╠═a8a9817c-332c-4b30-a5b6-c1cdc30d20a3
-# ╟─ecbc0b9e-f869-44e5-8bf1-2e828a526e3c
-# ╠═075307aa-7aa7-48d1-9371-661801f1fb49
-# ╠═bd3d8b33-791b-461b-8e14-fe0f7657d9ea
 # ╟─84499c1a-7089-4b4f-84d7-75179e14a160
 # ╠═ab04a609-f17b-4360-ba3c-784bc89e192d
