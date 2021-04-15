@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.2
 
 using Markdown
 using InteractiveUtils
@@ -11,61 +11,15 @@ begin
     Pkg.add([
         Pkg.PackageSpec(name="CSV", version="0.8"),
         Pkg.PackageSpec(name="DataFrames", version="0.22"),
-        Pkg.PackageSpec(name="Plots", version="1"),
-        Pkg.PackageSpec(name="StatsPlots", version="0.14"),
-        Pkg.PackageSpec(name="Turing", version="0.15"),
-        Pkg.PackageSpec(name="MCMCChains", version="4"),
+        Pkg.PackageSpec(name="Distributions", version="0.24"),
     ])
-    using CSV, DataFrames, Plots, StatsPlots, Turing, MCMCChains
+    using CSV, DataFrames, Distributions
 end
 
 # ╔═╡ 2e35c0c3-e337-4e8d-9dca-8b8a2e0bc962
 md"""
 ## Stimuli data
 """
-
-# ╔═╡ ecbc0b9e-f869-44e5-8bf1-2e828a526e3c
-md"## Model definition"
-
-# ╔═╡ 075307aa-7aa7-48d1-9371-661801f1fb49
-@model unimodal_model(sample) = begin
-	σ ~ InverseGamma(1, 2)
-	μ ~ Normal(50, sqrt(σ))
-	
-	for n in 1:length(sample)
-		sample[n] ~ Normal(μ, σ)
-	end
-end
-
-# ╔═╡ a293cbf7-5b32-479a-9438-b476b8385cb2
-md"""
-## Fitting
-"""
-
-# ╔═╡ a82dc683-687e-445c-8fd9-d21fd79de42d
-function plot_prior(prior, scale, scenario; kwargs...)
-	measures = stimuli_data[stimuli_data.scenario .== scenario, scale]	
-	
-	plot(prior,
-		color = 2,
-		lw = 3,
-		fill = 0, fillalpha = 0.5,
-		label = nothing;
-		xlabel = scale_label(scale),
-		ylabel = "P($(scale))",
-		xlims = (minimum(measures), maximum(measures)),
-		kwargs...
-	)
-end
-
-# ╔═╡ 530dfabe-68e0-437c-b4b0-b7910c0e2999
-iterations = 1000
-
-# ╔═╡ d68f753f-fe25-412d-8b44-57ba4f921a9f
-ϵ = 0.05
-
-# ╔═╡ 101627ae-ce66-42b7-9d8d-5e373f7efd05
-τ = 10
 
 # ╔═╡ 2e7b2d1c-9940-11eb-274d-efb0d7118484
 stimuli_path = "../experiment/acceptability_with_semantic/materials/stimuli_data.csv"
@@ -92,107 +46,97 @@ function get_sample(scale, scenario, condition = nothing)
 	subset[:, scale]
 end
 
-# ╔═╡ e1b24c79-2dcc-4d01-9cb9-40dfbd5777e3
-tv_size_unim_model = unimodal_model(get_sample("size", "tv", "unimodal"))
+# ╔═╡ a293cbf7-5b32-479a-9438-b476b8385cb2
+md"""
+## Unimodal samples
 
-# ╔═╡ 2366d4b3-ce95-4134-a935-ae82a2f747bf
-chain = sample(
-	tv_size_unim_model, 
-	HMC(ϵ, τ), 
-	iterations
-)
-
-# ╔═╡ 8ca79060-27b0-4910-adc7-0b68d1cab82c
-describe(chain)
+The easiest approach to go from the sample to a distribution is to use the `fit()` function from `Distributions`.
+"""
 
 # ╔═╡ 61b5e56b-3a33-4838-bbc7-7bc5226fafe4
-prior_price_tv = let
-	sample = filter(data) do row
-		(row.scenario == "tv") && row.bimodal
-		# note: bimodal and unimodal result in the same set of prices
-		# select 1 to avoid duplicates
-	end
-	
-	fit(LogNormal, sample.price)
-end
+prior_price_tv = fit(LogNormal, get_sample("price", "tv", "unimodal"))
 
 # ╔═╡ 7841ae4a-f9da-4ff1-8f71-ce2290e87a71
-prior_price_couch =  let
-	sample = filter(data) do row
-		(row.scenario == "couch") && row.bimodal
-		# note: idem for selecting condition
-	end
-	
-	fit(Normal, sample.price)
-end
+prior_price_couch = fit(Normal,  get_sample("price", "couch", "unimodal"))
 
 # ╔═╡ 83fff987-c599-4a2e-866a-b954e822899d
-prior_size_tv_unim = let
-	sample = filter(data) do row
-		(row.scenario == "tv") && row.unimodal
-	end
-	
-	fit(Normal, sample.size)
+prior_size_tv_unim = fit(Normal,  get_sample("size", "tv", "unimodal"))
+
+# ╔═╡ 492ea724-782f-4141-ade3-2f5cb11e378e
+prior_size_ch_unim = fit(Normal,  get_sample("size", "couch", "unimodal"))
+
+# ╔═╡ 19aa3fe8-7ae5-4be2-8e28-5540a42dc760
+md"""
+## Bimodal samples
+
+The `MixtureModel` can be used to represent a bimodal distribution, but `fit` can't be used on mixed models (not weird, this is more complex).
+
+I use the `GaussianMixtures` package to estimate this distributions, but the package does not work with Pluto, so this is done in a separate script with the following code:
+
+```julia
+using GaussianMixtures
+
+parameters(model) = Dict(
+	:w => model.w,
+	:μ => model.μ,
+	:σ => sqrt.(model.Σ)
+	)
+
+gmm_size_tv_bim = let
+   sample = get_sample("size", "tv", "bimodal")
+   GMM(2, Float64.(sample))
 end
+
+params_size_tv_bim = parameters(gmm_size_tv_bim)
+
+gmm_size_ch_bim = let
+    sample = get_sample("size", "couch", "bimodal")
+    GMM(2, Float64.(sample))
+ end
+
+ params_size_ch_bim = parameters(gmm_size_ch_bim)
+```
+"""
 
 # ╔═╡ 1f9c8c5c-4d6c-44cd-8b95-00bc44dc4b6b
 prior_size_tv_bim = let
-	sample = filter(data) do row
-		(row.scenario == "tv") && row.bimodal
-	end
+	weights = [0.5, 0.5]
+	μs = [33.1429, 75.1429]
+	σs = [5.84144, 4.35656]
 	
-	sample_upper = sample[sample.size .> 50, :]
-	sample_lower = sample[sample.size .< 50, :]
-	
-	prior_upper = fit(Normal, sample_upper.size)
-	prior_lower = fit(Normal, sample_lower.size)
-	
-	prior = MixtureModel([prior_upper, prior_lower], [0.5, 0.5])
-end
-
-# ╔═╡ 492ea724-782f-4141-ade3-2f5cb11e378e
-prior_size_ch_unim = let
-	sample = filter(data) do row
-		(row.scenario == "couch") && row.unimodal
-	end
-	
-	fit(Normal, sample.size)
+	MixtureModel(
+		[Normal(μs[1], σs[1]), Normal(μs[2], σs[2])], 
+		weights)
 end
 
 # ╔═╡ a8a9817c-332c-4b30-a5b6-c1cdc30d20a3
 prior_size_ch_bim = let
-	sample = filter(data) do row
-		(row.scenario == "couch") && row.bimodal
-	end
+	weights = [0.5, 0.5]
+	μs = [105.0, 54.4286]
+	σs = [5.68205, 6.56521]
 	
-	sample_upper = sample[sample.size .> 70, :]
-	sample_lower = sample[sample.size .< 70, :]
-	
-	prior_upper = fit(Normal, sample_upper.size)
-	prior_lower = fit(Normal, sample_lower.size)
-	
-	prior = MixtureModel([prior_upper, prior_lower], [0.5, 0.5])
+	MixtureModel(
+		[Normal(μs[1], σs[1]), Normal(μs[2], σs[2])], 
+		weights)
 end
+
+# ╔═╡ 84499c1a-7089-4b4f-84d7-75179e14a160
+md"""
+## Packages
+"""
 
 # ╔═╡ Cell order:
 # ╟─2e35c0c3-e337-4e8d-9dca-8b8a2e0bc962
+# ╠═2e7b2d1c-9940-11eb-274d-efb0d7118484
 # ╠═114cd0b7-8dea-42d4-a19e-36cd4a3c0f6e
 # ╠═cb7e8e40-4bf7-4596-8268-b7a0a9abe0a7
-# ╟─ecbc0b9e-f869-44e5-8bf1-2e828a526e3c
-# ╠═075307aa-7aa7-48d1-9371-661801f1fb49
 # ╟─a293cbf7-5b32-479a-9438-b476b8385cb2
 # ╠═61b5e56b-3a33-4838-bbc7-7bc5226fafe4
 # ╠═7841ae4a-f9da-4ff1-8f71-ce2290e87a71
 # ╠═83fff987-c599-4a2e-866a-b954e822899d
-# ╠═1f9c8c5c-4d6c-44cd-8b95-00bc44dc4b6b
 # ╠═492ea724-782f-4141-ade3-2f5cb11e378e
+# ╟─19aa3fe8-7ae5-4be2-8e28-5540a42dc760
+# ╠═1f9c8c5c-4d6c-44cd-8b95-00bc44dc4b6b
 # ╠═a8a9817c-332c-4b30-a5b6-c1cdc30d20a3
-# ╠═a82dc683-687e-445c-8fd9-d21fd79de42d
-# ╠═e1b24c79-2dcc-4d01-9cb9-40dfbd5777e3
-# ╠═530dfabe-68e0-437c-b4b0-b7910c0e2999
-# ╠═d68f753f-fe25-412d-8b44-57ba4f921a9f
-# ╠═101627ae-ce66-42b7-9d8d-5e373f7efd05
-# ╠═2366d4b3-ce95-4134-a935-ae82a2f747bf
-# ╠═8ca79060-27b0-4910-adc7-0b68d1cab82c
+# ╟─84499c1a-7089-4b4f-84d7-75179e14a160
 # ╠═ab04a609-f17b-4360-ba3c-784bc89e192d
-# ╠═2e7b2d1c-9940-11eb-274d-efb0d7118484

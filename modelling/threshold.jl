@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.2
 
 using Markdown
 using InteractiveUtils
@@ -25,10 +25,9 @@ begin
         Pkg.PackageSpec(name="PlotThemes", version="2"),
         Pkg.PackageSpec(name="StatsPlots", version="0.14"),
         Pkg.PackageSpec(name="PlutoUI", version="0.7"),
+        Pkg.PackageSpec(name="Optim", version="1"),
     ])
-    using CSV, DataFrames, Distributions, Plots, PlotThemes, StatsPlots, PlutoUI
-
-	theme(:wong, legend = :outerright)
+    using CSV, DataFrames, Distributions, Plots, PlotThemes, StatsPlots, PlutoUI, Optim
 end
 
 # ╔═╡ 2337edd6-894c-442d-bdf3-d1b9775dce4b
@@ -43,7 +42,8 @@ md"""
 
 # ╔═╡ 9ebd6e50-cce7-40c8-80b6-5d0785127687
 paths = Dict(
-	"stimuli" => "../experiment/acceptability_with_semantic/materials/stimuli_data.csv"
+	"stimuli" => "../experiment/acceptability_with_semantic/materials/stimuli_data.csv",
+	"results" => "../experiment/acceptability_with_semantic/results/results_filtered.csv"
 )
 
 # ╔═╡ 56e46a90-adc7-4967-aa50-441dea17d511
@@ -77,7 +77,7 @@ couch_prices = let
 end
 
 # ╔═╡ 252f4a66-37e7-4ffa-9429-a407af3a9345
-couch_price_scale_points = 0:25:1500
+couch_price_scale_points = 0:50:1500
 
 # ╔═╡ 4387731e-0866-425c-aee7-a83b7ca729d5
 fitted_prior_couch_price = fit(Normal, couch_prices)
@@ -165,6 +165,7 @@ function plot_literal_listener(θ)
 		couch_price_scale_points,
 		x -> literal_listener(x, θ, couch_price_density, couch_price_cumulative),
 		fill = 0, fillalpha = 0.5,
+		label = "literal listener"
 	)
 end
 
@@ -198,8 +199,7 @@ function expected_success(θ, scale_points, densityf, cumulativef)
 		densityf(x) * literal_listener(x, θ, densityf, cumulativef)
 	end
 	
-	#term_1 + 
-	term_2
+	term_1 + term_2
 end
 
 # ╔═╡ 217e6552-74ca-4ade-ae21-e215bf68ca90
@@ -279,7 +279,7 @@ function probability_threshold(θ, λ, coverage, scale_points, densityf, cumulat
 end
 
 # ╔═╡ 51179458-39d3-4652-939d-6f15954056e3
-@bind tp_example_λ Slider(0:5:100)
+@bind tp_example_λ Slider(1:5:100, default = 50)
 
 # ╔═╡ 1fae8bee-9cca-404f-8fe8-0752b4c64e6f
 md"λ : $(tp_example_λ)"
@@ -337,7 +337,7 @@ function use_adjective(degree, θ_probabilities::AbstractArray,
 end
 
 # ╔═╡ 899f2e2a-ab04-412f-97b2-90269cc14cf6
-@bind ua_example_λ Slider(0:5:100)
+@bind ua_example_λ Slider(1:5:100, default = 50)
 
 # ╔═╡ b522ae78-c917-47ca-83c9-ff43771b0603
 md"λ : $(ua_example_λ)"
@@ -363,13 +363,87 @@ function plot_use_adjective(λ, coverage)
 	
 	plot(couch_price_scale_points,
 		ua,
-		fill = 0, fillalpha = 0.5,
-		label = "P(use adjective)"
+		ylabel = "P(use adjective)",
+		xlabel = "Price (\$)",
+		label = "model prediction",
 	)
 end
 
 # ╔═╡ 96112ecc-8f1f-4bb1-b6c5-a67cfa8a00a9
 plot_use_adjective(ua_example_λ, ua_example_coverage)
+
+# ╔═╡ ada1c503-8664-4611-bc0a-3c6ce0a41602
+md"""
+## Fitting parameters
+"""
+
+# ╔═╡ ccb9bbd4-4c2e-474f-8937-b0eb8c235814
+semantic_results = let
+	all_results = CSV.read(paths["results"], DataFrame)
+	
+	semresults = filter(all_results) do row
+		row.item_type == "semantic"
+	end
+	
+	semresults.response = parse.(Bool, semresults.response)
+	
+	semresults
+end ;
+
+# ╔═╡ 91116ccc-25d6-47e5-8624-63a215cec588
+couch_price_results = let
+	results = filter(semantic_results) do row
+		row.scenario == "couch" && row.adj_target == "expensive"
+	end
+	
+	grouped = groupby(results, :stimulus_price)
+	
+	acceptance_rate(judgements) = count(judgements) / length(judgements)
+	
+	combine(grouped, :response => acceptance_rate => "ratio_accepted")
+end
+
+# ╔═╡ 9b096d21-8aa9-42fd-81a5-593942a7a468
+function estimate_error(parameters)
+	λ, coverage = parameters
+	
+	θ_probabilities = map(couch_price_scale_points) do θ
+		probability_threshold(θ, λ, coverage, 
+			couch_price_scale_points, couch_price_density, couch_price_cumulative)
+	end
+	
+	p_predicted = map(couch_price_results.stimulus_price) do price
+		use_adjective(price, θ_probabilities, couch_price_scale_points)
+	end
+	
+	p_observed = couch_price_results.ratio_accepted
+	
+	mse = sum((p_predicted .- p_observed) .^2)
+end
+
+# ╔═╡ 705af09d-7f4f-496c-ac89-29fd461bae4f
+opt_result = let
+	initial_values = [50.0, 0.0]
+	
+	optimize(estimate_error,
+		initial_values
+	)
+end
+
+# ╔═╡ 0bc81ff1-b5e5-4fff-af12-19c41c750dcd
+optimal_λ, optimal_coverage = Optim.minimizer(opt_result)
+
+# ╔═╡ 4ba598ff-32ce-4467-9fcb-db3b0c4b3ae2
+let
+	p = plot_use_adjective(optimal_λ, optimal_coverage)
+	
+	scatter!(p,
+		couch_price_results.stimulus_price,
+		couch_price_results.ratio_accepted,
+		label = "observed acceptance rates",
+		legend = :outertop,
+		)
+end
 
 # ╔═╡ Cell order:
 # ╟─2337edd6-894c-442d-bdf3-d1b9775dce4b
@@ -421,3 +495,10 @@ plot_use_adjective(ua_example_λ, ua_example_coverage)
 # ╠═96112ecc-8f1f-4bb1-b6c5-a67cfa8a00a9
 # ╠═edd92128-c71e-40da-b325-32425c9d1cf0
 # ╠═55869021-3709-412a-a216-92c035a90f6a
+# ╟─ada1c503-8664-4611-bc0a-3c6ce0a41602
+# ╠═ccb9bbd4-4c2e-474f-8937-b0eb8c235814
+# ╠═91116ccc-25d6-47e5-8624-63a215cec588
+# ╠═9b096d21-8aa9-42fd-81a5-593942a7a468
+# ╠═705af09d-7f4f-496c-ac89-29fd461bae4f
+# ╠═0bc81ff1-b5e5-4fff-af12-19c41c750dcd
+# ╠═4ba598ff-32ce-4467-9fcb-db3b0c4b3ae2
