@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.1
+# v0.14.2
 
 using Markdown
 using InteractiveUtils
@@ -335,7 +335,7 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╟─49f49cf2-b8b2-44cb-9195-2c2752979257
 # ╠═254b6cda-8c9c-11eb-1c41-353023a58eea
 # ╠═047ecfd6-37ca-4a1c-91a7-2638faaa2bb6
-# ╠═77ae2222-3b71-439e-80a4-b8b7f957332a
+# ╟─77ae2222-3b71-439e-80a4-b8b7f957332a
 # ╠═1936ac3b-861b-437e-bdc6-5dd4d94f48ce
 # ╠═9cb8cc07-5159-4212-8339-0192b08a4b4e
 # ╠═06fe2b77-b932-46c7-a712-5dfe670c710a

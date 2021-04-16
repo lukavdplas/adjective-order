@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.1
+# v0.14.2
 
 using Markdown
 using InteractiveUtils
@@ -11,8 +11,6 @@ begin
     Pkg.add([
         Pkg.PackageSpec(name="CSV", version="0.8"),
         Pkg.PackageSpec(name="DataFrames", version="0.22"),
-        Pkg.PackageSpec(name="Plots", version="1"),
-        Pkg.PackageSpec(name="PlotThemes", version="2"),
     ])
     using CSV, DataFrames
 end
@@ -162,7 +160,7 @@ md"## Format results"
 columns = [ 
 		"participant", "id", "response", "time", 
 	"group", "condition", names(item_data)[2:end]...,
-	"stimulus_size", "stimulus_price"
+	"stimulus_size", "stimulus_price", "confidence_on_semantic",
 	]
 
 # ╔═╡ 51d61b17-4016-4135-ba2a-f0b0cd893999
@@ -182,51 +180,6 @@ condition_table = DataFrame(
 	"tv" => ["bimodal", "unimodal"],
 	"couch" => ["unimodal", "bimodal"]
 )
-
-# ╔═╡ 21492ade-a33d-489e-9113-f13bb4251986
-item_results = let
-	df = empty_df()
-	
-	for participant in 1:nrow(results)
-		group = results[participant, "Group"]
-		
-		#acceptability judgements
-		for i in 1:nrow(item_data)
-			#item and response
-			id = item_data[i, "id"]
-			item = id * "_1"
-			response = Int(results[participant, item])	
-			time = results[participant, id * "_time_Last Click"]
-			
-			#item data
-			metadata = map(names(item_data)) do name
-				name => item_data[i, name]
-			end
-			
-			#condition (bimodal/unimodal)
-			condition = condition_table[group, item_data[i, "scenario"]]
-
-			
-			data = Dict(
-				"participant" => participant, "group" => group, 
-				"condition" => condition, "response" => response,
-				"time" => time,
-				metadata...
-			)
-			
-			for col in columns
-				if !(col in keys(data))
-					data[col] = missing
-				end
-			end
-			
-			push!(df, data)
-		end
-		
-	end
-	
-	df
-end 
 
 # ╔═╡ 4000e200-f3b9-4d09-af10-48b8b4ad5a97
 md"""
@@ -420,6 +373,67 @@ confidence_results = let
 	df
 end
 
+# ╔═╡ 787693d9-4111-45f6-b14f-21603783ade3
+function confidence_rating(participant, scenario)
+	adjective = scenario == "tv" ? "big" : "long"
+	
+	data = filter(confidence_results) do row
+		(row.participant == participant) && (row.scenario == scenario) && (row.adj_target == adjective)
+	end
+	
+	response = first(data.response)
+end
+
+# ╔═╡ 21492ade-a33d-489e-9113-f13bb4251986
+item_results = let
+	df = empty_df()
+	
+	for participant in 1:nrow(results)
+		group = results[participant, "Group"]
+		
+		#acceptability judgements
+		for i in 1:nrow(item_data)
+			#item and response
+			id = item_data[i, "id"]
+			item = id * "_1"
+			response = Int(results[participant, item])	
+			time = results[participant, id * "_time_Last Click"]
+			
+			#item data
+			metadata = map(names(item_data)) do name
+				name => item_data[i, name]
+			end
+			
+			#condition (bimodal/unimodal)
+			scenario = item_data[i, "scenario"]
+			condition = condition_table[group, scenario]
+			
+			#confidence on semantic task
+			confidence = confidence_rating(participant, scenario)
+
+			
+			data = Dict(
+				"participant" => participant, "group" => group, 
+				"condition" => condition, "response" => response,
+				"time" => time,
+				"confidence_on_semantic" => confidence,
+				metadata...
+			)
+			
+			for col in columns
+				if !(col in keys(data))
+					data[col] = missing
+				end
+			end
+			
+			push!(df, data)
+		end
+		
+	end
+	
+	df
+end 
+
 # ╔═╡ e1ae1b84-a276-481b-a36e-60f2586d66e9
 md"### Meta questions"
 
@@ -545,6 +559,7 @@ CSV.write("results/results.csv", all_results)
 # ╟─23ca8de5-06ee-4b90-ab0a-d25d68142da7
 # ╠═9967b13c-4541-4b2e-b566-f4aefca41c9d
 # ╠═4dba5fc9-d218-461b-9e29-1405b6f9aa58
+# ╠═787693d9-4111-45f6-b14f-21603783ade3
 # ╟─e1ae1b84-a276-481b-a36e-60f2586d66e9
 # ╠═d802d624-f0de-4fcb-92b6-8c8f1953d192
 # ╠═2b0c6db5-0362-493f-9560-ee65c295c8c1

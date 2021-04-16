@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.2
 
 using Markdown
 using InteractiveUtils
@@ -129,6 +129,45 @@ absolute_data = test_results[test_results.adj_secondary_type .== "absolute", :] 
 
 # ╔═╡ 586961f3-127b-424d-8599-9cb765054850
 md"**Results per adjective combination**"
+
+# ╔═╡ d02c1bd3-8cd8-47f4-804c-c08effaac0df
+md"""
+## Order preference * confidence
+"""
+
+# ╔═╡ d4d8acb4-df67-4cc1-9daf-0fc0a46b5e06
+condition_confidence_results = combine(
+	groupby(test_results, [:order, :condition, :confidence_on_semantic]),
+	:response => mean,
+	:participant => length ∘ unique => "N_participants"
+)
+
+# ╔═╡ 043d1865-7a2d-4c3d-86de-e123eecfdf5f
+let
+	p = plot(xticks = 1:5, xlims = (4, 5),
+		xlabel = "confidence rating",
+		ylabel = "mean acceptability rating"
+	)
+	
+	for order in ["first", "second"]
+		for condition in ["bimodal", "unimodal"]
+			data = filter(condition_confidence_results) do row
+				row.order == order && row.condition == condition
+			end
+			
+			color = condition == "bimodal" ? 1 : 2
+			style = order == "first" ? :dash : :solid
+			label = condition * " + " * order
+			
+			plot!(p, data.confidence_on_semantic, data.response_mean,
+				lw = 3, color = color, linestyle = style,
+				label = label,
+			)
+		end
+	end
+	
+	p
+end
 
 # ╔═╡ 215219a4-47a6-4c5f-b1e0-0c8c270ff3f3
 md"""
@@ -416,6 +455,9 @@ plot_aggregated_responses(absolute_data)
 # ╟─05803aad-d182-4be8-9fe3-54aaa7ae919d
 # ╟─586961f3-127b-424d-8599-9cb765054850
 # ╟─f99af668-ddae-414f-ad51-17c58f2d4b84
+# ╟─d02c1bd3-8cd8-47f4-804c-c08effaac0df
+# ╠═d4d8acb4-df67-4cc1-9daf-0fc0a46b5e06
+# ╠═043d1865-7a2d-4c3d-86de-e123eecfdf5f
 # ╟─215219a4-47a6-4c5f-b1e0-0c8c270ff3f3
 # ╠═2e9afc98-7e13-45e5-ba23-d0daa4d8afb2
 # ╠═7b2998f7-dc66-49b4-9d0d-71a7b357df38
