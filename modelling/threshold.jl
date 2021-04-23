@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.2
+# v0.14.3
 
 using Markdown
 using InteractiveUtils
@@ -19,20 +19,19 @@ begin
     Pkg.activate(mktempdir())
     Pkg.add([
         Pkg.PackageSpec(name="CSV", version="0.8"),
-        Pkg.PackageSpec(name="DataFrames", version="0.22"),
+        Pkg.PackageSpec(name="DataFrames", version="1"),
         Pkg.PackageSpec(name="Distributions", version="0.24"),
         Pkg.PackageSpec(name="Plots", version="1"),
-        Pkg.PackageSpec(name="PlotThemes", version="2"),
         Pkg.PackageSpec(name="StatsPlots", version="0.14"),
         Pkg.PackageSpec(name="PlutoUI", version="0.7"),
         Pkg.PackageSpec(name="Optim", version="1"),
     ])
-    using CSV, DataFrames, Distributions, Plots, PlotThemes, StatsPlots, PlutoUI, Optim
+    using CSV, DataFrames, Distributions, Plots, StatsPlots, PlutoUI, Optim
 end
 
 # ╔═╡ 2337edd6-894c-442d-bdf3-d1b9775dce4b
 md"""
-Goal: model of semantic judgements. For now, I focus on "expensive", which has no distinction in conditions.
+Goal: model of semantic judgements. For now, I focus on "expensive couch".
 """
 
 # ╔═╡ 8332538e-a06a-415b-8fc1-45e44c5c6a1a
@@ -53,17 +52,6 @@ stimuli_data = CSV.read(paths["stimuli"], DataFrame)
 md"""
 ## Prior distribution
 """
-
-# ╔═╡ 27c93d40-e837-41d8-87b0-c8f03f66825f
-tv_prices = let
-	sample = filter(stimuli_data) do row
-		(row.scenario == "tv") && row.bimodal
-		#filter on one condition to prevent duplicates
-		#set of prices is the same for both conditions
-	end
-	
-	sample.price
-end
 
 # ╔═╡ fe1ed26e-42bf-4178-89e4-bef0f4e0c240
 couch_prices = let
@@ -148,6 +136,27 @@ md"""
 ### Literal listener
 """
 
+# ╔═╡ 3296d398-5e9b-4afb-a0c7-e8fc7d980548
+md"""
+The literal listener model estimates the probability that the degree (i.e. price/size) of an object is equal to $x$ given a message like *"It's an expensive couch"*.
+
+The distribution of couch prices defines the prior belief that the price could be $x$, i.e. $P(x)$
+
+The adjective *"expensive"* is interpreted to indicate that $x$ is above a threshold $\theta$. So we estimate the posterior belief
+
+$P(x | x > \theta)$
+
+$\geq$
+
+This is calculated as follows
+
+$L_0(x | x > \theta) = \cases{
+	\frac{P(x)}{\int_\theta^{max} P(x)} & if \(x \geq θ\) \\ 
+	0 &if \(x < θ\)
+}$
+
+"""
+
 # ╔═╡ 564a20ee-5f1a-42ee-8177-6184989bea76
 function literal_listener(x, θ, densityf, cumulativef)	
 	if x >= θ
@@ -156,6 +165,11 @@ function literal_listener(x, θ, densityf, cumulativef)
 		0
 	end
 end
+
+# ╔═╡ 770e7e10-ceff-4bb7-93f5-b13ba722a7ce
+md"""
+Plot for the literal listener model. The plot takes the threshold $\theta$ as a parameter.
+"""
 
 # ╔═╡ 83bbf10c-c616-4982-a3dc-9f8773aadbe5
 function plot_literal_listener(θ)
@@ -185,6 +199,27 @@ md"""
 ### Expected success
 """
 
+# ╔═╡ f3b0e6f6-2e2b-423c-a89d-0dfec3facf07
+md"""
+Based on the literal listener model, we can calculate the communicate effeciency a threshold $\theta$. 
+
+We estimate the *expected succes* of our communication if we use $\theta$ as our threshold. When we describe an object of size/price $x$, the success of the action is determined by the posterior belief $P(x | \text{message})$ that the listener will hold based on the message.
+
+Here, assume we describe an object of price/size $x$ as follows:
+
+* If $x > \theta$, we won't use the vague adjective, so the listener will use their prior belief $P(x)$
+* If $x \geq \theta$, we will describe it using the vague adjective. The listener then updates their belief according to the literal listener model to estimate $L_0(x | x > \theta)$
+
+The *expected success* takes the success for each point $x$ in the scale, multiplied by the prior probability that $x$ will occur.
+
+$\sum P(x) * \text{success}(x)$
+
+So
+
+$ES(\theta) = \sum_{x < \theta} P(x) \times P(x) \; +$
+$\sum_{x \geq \theta} P(x) \times L_0(x | x \geq \theta)$
+"""
+
 # ╔═╡ c3c0ac35-3992-4c3c-9794-96967941fcf7
 function expected_success(θ, scale_points, densityf, cumulativef)
 	term_1 = if θ > minimum(scale_points)
@@ -202,6 +237,11 @@ function expected_success(θ, scale_points, densityf, cumulativef)
 	term_1 + term_2
 end
 
+# ╔═╡ 3e412b0d-b835-4e29-9155-c24b5b5d9546
+md"""
+Plot of the expected success for every threshold value $\theta$
+"""
+
 # ╔═╡ 217e6552-74ca-4ade-ae21-e215bf68ca90
 let
 	p = plot_couch_prior()
@@ -215,7 +255,6 @@ let
 	plot!(p,
 		couch_price_scale_points,
 		es,
-		fill = 0, fillalpha = 0.5,
 		label = "expected success"
 	)
 end
@@ -223,6 +262,15 @@ end
 # ╔═╡ 4a6d5189-a731-45c4-8e38-3b5099756f18
 md"""
 ### Utility
+"""
+
+# ╔═╡ 1a2cbb22-a5b1-4f3c-8238-d59436f9d1a0
+md"""
+The utility of a threshold is based on the expected success. Parameters are threshold $\theta$ and a coverage parameter $c$
+
+This is calculated as follows:
+
+$U(\theta, c) = ES(\theta) + c \times \Big( \sum_{x = \theta}^{max} P(x) \Big)$
 """
 
 # ╔═╡ a246c8c9-808c-44e6-94a9-ac077c546baa
@@ -237,7 +285,7 @@ function utility(θ, coverage, scale_points, densityf, cumulativef)
 end
 
 # ╔═╡ e4c4689c-53f2-4874-a8eb-fe31d1da50a5
-@bind ut_example_coverage Slider(0:0.01:0.25)
+@bind ut_example_coverage Slider(-0.25:0.01:0.25, default = 0.0)
 
 # ╔═╡ 281d7b77-6fb0-4733-88c9-0c49c10b8109
 md"Coverage parameter : $(ut_example_coverage)"
@@ -256,7 +304,6 @@ function plot_utility(coverage)
 	plot!(p,
 		couch_price_scale_points,
 		ut,
-		fill = 0, fillalpha = 0.5,
 		label = "utility"
 	)
 end
@@ -267,6 +314,13 @@ plot_utility(ut_example_coverage)
 # ╔═╡ 5ec1487c-fb7e-4c09-b80c-f92b2a3f37e4
 md"""
 ### Threshold probability
+"""
+
+# ╔═╡ 1bcb2a30-bbe8-4225-8566-347706555828
+md"""
+The probability that one would use a threshold $\theta$ is based on hyperparameters $c$ and $\lambda$ and calculated as follows
+
+$P(\theta | \lambda, c) = \frac{e^{\lambda \cdot U(\theta, c)}}{\sum_t e^{\lambda \cdot U(t, c)}}$
 """
 
 # ╔═╡ 0b5dbba1-8509-495d-9da1-051c71b116fb
@@ -285,7 +339,7 @@ end
 md"λ : $(tp_example_λ)"
 
 # ╔═╡ 34398d43-b2bd-428f-a9f8-fab579ccb99f
-@bind tp_example_coverage Slider(0:0.01:0.25)
+@bind tp_example_coverage Slider(-0.25:0.01:0.25, default = 0.0)
 
 # ╔═╡ da453bd1-70f1-47a2-b32d-eee7af514e43
 md"Coverage parameter: $(tp_example_coverage)"
@@ -318,6 +372,15 @@ md"""
 ### Adjective use
 """
 
+# ╔═╡ 01cbddcb-641c-4251-81bb-83637caff93e
+md"""
+Based on the distribution of thresholds, we can now calculate the probability that a speaker would use the adjective for a degree $x$.
+
+In particular, the speaker will use the adjective if they are using a threshold value $\theta$ such that $x \geq \theta$. We use the threshold probability function to estimate how likely such thresholds are.
+
+$S_1(x, \lambda, c) = \sum_{\theta \leq x} P(\theta | \lambda, c)$
+"""
+
 # ╔═╡ 7e6becae-5be3-4069-b2f6-139f4b02cf92
 function use_adjective(degree, λ::Number, coverage::Number, 
 		scale_points::AbstractArray, 
@@ -326,6 +389,11 @@ function use_adjective(degree, λ::Number, coverage::Number,
 		probability_threshold(θ, λ, coverage, scale_points, densityf, cumulativef)
 	end
 end
+
+# ╔═╡ a97115d7-f572-4d58-8c9a-a073b17b7b12
+md"""
+For the sake of efficiency, an alternative implementation of the function takes an array of precalculated threshold probabilities.
+"""
 
 # ╔═╡ 4f454802-5399-43dd-928e-89506a78da28
 function use_adjective(degree, θ_probabilities::AbstractArray,
@@ -343,7 +411,7 @@ end
 md"λ : $(ua_example_λ)"
 
 # ╔═╡ d2d4c6d6-d440-4442-979d-76c9a0e76b00
-@bind ua_example_coverage Slider(0:0.01:0.25)
+@bind ua_example_coverage Slider(-0.25:0.01:0.25, default = 0.0)
 
 # ╔═╡ 5318b14a-e95b-4324-85bd-8a8094351cad
 md"Coverage parameter: $(ua_example_coverage)"
@@ -355,10 +423,10 @@ ua_example_θ_probabilities = map(couch_price_scale_points) do θ
 end
 
 # ╔═╡ 55869021-3709-412a-a216-92c035a90f6a
-function plot_use_adjective(λ, coverage)
+function plot_use_adjective(θ_probabilities)
 	ua(d) = use_adjective(
 		d, 
-		ua_example_θ_probabilities,
+		θ_probabilities,
 		couch_price_scale_points)
 	
 	plot(couch_price_scale_points,
@@ -370,11 +438,20 @@ function plot_use_adjective(λ, coverage)
 end
 
 # ╔═╡ 96112ecc-8f1f-4bb1-b6c5-a67cfa8a00a9
-plot_use_adjective(ua_example_λ, ua_example_coverage)
+let
+	p = plot_use_adjective(ua_example_θ_probabilities)
+end
 
 # ╔═╡ ada1c503-8664-4611-bc0a-3c6ce0a41602
 md"""
 ## Fitting parameters
+"""
+
+# ╔═╡ 284bf321-935c-421e-8183-eeae4e3fae89
+md"""
+Now we can look at the probability that each stimulus was selected for the target adjective in the experiment and fit the model to these data.
+
+We start by importing the results from the experiment.
 """
 
 # ╔═╡ ccb9bbd4-4c2e-474f-8937-b0eb8c235814
@@ -393,7 +470,7 @@ end ;
 # ╔═╡ 91116ccc-25d6-47e5-8624-63a215cec588
 couch_price_results = let
 	results = filter(semantic_results) do row
-		row.scenario == "couch" && row.adj_target == "expensive"
+		row.scenario == "couch" && row.adj_target == "expensive" && row.condition == "bimodal" 
 	end
 	
 	grouped = groupby(results, :stimulus_price)
@@ -402,6 +479,13 @@ couch_price_results = let
 	
 	combine(grouped, :response => acceptance_rate => "ratio_accepted")
 end
+
+# ╔═╡ 2500f256-3d54-4eae-a5df-60267afb2b59
+md"""
+For values of the parameters $\lambda$ and $c$, we calculate how far off the model is from the real data.
+
+I use the mean square error (MSE) to score the predictions.
+"""
 
 # ╔═╡ 9b096d21-8aa9-42fd-81a5-593942a7a468
 function estimate_error(parameters)
@@ -421,6 +505,11 @@ function estimate_error(parameters)
 	mse = sum((p_predicted .- p_observed) .^2)
 end
 
+# ╔═╡ 2226afd3-aa95-4b9e-9d5b-8addf7b69854
+md"""
+I use the `Optim` package to find optimal values of $\lambda$ and $c$
+"""
+
 # ╔═╡ 705af09d-7f4f-496c-ac89-29fd461bae4f
 opt_result = let
 	initial_values = [50.0, 0.0]
@@ -433,9 +522,19 @@ end
 # ╔═╡ 0bc81ff1-b5e5-4fff-af12-19c41c750dcd
 optimal_λ, optimal_coverage = Optim.minimizer(opt_result)
 
+# ╔═╡ 00a3912f-7b63-4338-ac25-a44cca17e2db
+md"""
+The best-fitting model compared to the experiment data:
+"""
+
 # ╔═╡ 4ba598ff-32ce-4467-9fcb-db3b0c4b3ae2
 let
-	p = plot_use_adjective(optimal_λ, optimal_coverage)
+	θ_probabilities =	map(couch_price_scale_points) do θ
+		probability_threshold(θ, optimal_λ, optimal_coverage, 
+			couch_price_scale_points, couch_price_density, couch_price_cumulative)
+	end
+
+	p = plot_use_adjective(θ_probabilities)
 	
 	scatter!(p,
 		couch_price_results.stimulus_price,
@@ -452,7 +551,6 @@ end
 # ╠═9ebd6e50-cce7-40c8-80b6-5d0785127687
 # ╠═56e46a90-adc7-4967-aa50-441dea17d511
 # ╟─10898ea6-0ebb-4e37-9171-d1bfdb2cc932
-# ╠═27c93d40-e837-41d8-87b0-c8f03f66825f
 # ╠═fe1ed26e-42bf-4178-89e4-bef0f4e0c240
 # ╠═252f4a66-37e7-4ffa-9429-a407af3a9345
 # ╠═4387731e-0866-425c-aee7-a83b7ca729d5
@@ -463,21 +561,27 @@ end
 # ╠═44d33712-d590-423b-b75c-a281dcb27ae9
 # ╠═f93afb34-6e01-49bc-843a-0eac76bf8b13
 # ╟─ad926740-e511-4bf7-a76f-eb1ed1f33e4b
+# ╟─3296d398-5e9b-4afb-a0c7-e8fc7d980548
 # ╠═564a20ee-5f1a-42ee-8177-6184989bea76
+# ╟─770e7e10-ceff-4bb7-93f5-b13ba722a7ce
 # ╠═83bbf10c-c616-4982-a3dc-9f8773aadbe5
 # ╟─de2bdadc-0ab9-4cc4-9d1a-2aa040ab4c7a
-# ╠═b7ecc372-66d2-437a-b832-304df70dfab5
+# ╟─b7ecc372-66d2-437a-b832-304df70dfab5
 # ╠═1cd0b656-580d-4daf-9ce7-8b8c3e37dfde
 # ╟─b8806ceb-8cf3-406c-b167-92613f7f2488
+# ╟─f3b0e6f6-2e2b-423c-a89d-0dfec3facf07
 # ╠═c3c0ac35-3992-4c3c-9794-96967941fcf7
+# ╟─3e412b0d-b835-4e29-9155-c24b5b5d9546
 # ╠═217e6552-74ca-4ade-ae21-e215bf68ca90
 # ╟─4a6d5189-a731-45c4-8e38-3b5099756f18
+# ╟─1a2cbb22-a5b1-4f3c-8238-d59436f9d1a0
 # ╠═a246c8c9-808c-44e6-94a9-ac077c546baa
 # ╟─281d7b77-6fb0-4733-88c9-0c49c10b8109
 # ╠═e4c4689c-53f2-4874-a8eb-fe31d1da50a5
 # ╠═a53d05c5-b1c5-4ab7-a29a-ef88361c5203
 # ╠═4051fec8-8a0c-4412-84aa-ad1f8d3491ee
 # ╟─5ec1487c-fb7e-4c09-b80c-f92b2a3f37e4
+# ╟─1bcb2a30-bbe8-4225-8566-347706555828
 # ╠═0b5dbba1-8509-495d-9da1-051c71b116fb
 # ╟─1fae8bee-9cca-404f-8fe8-0752b4c64e6f
 # ╟─51179458-39d3-4652-939d-6f15954056e3
@@ -486,7 +590,9 @@ end
 # ╠═ab797a07-254e-40f8-b7b9-c7fe31d5d4ba
 # ╠═33090a3c-ce88-40aa-b3ee-ba6eb2b6b593
 # ╟─0a0715d3-8f0b-4e26-b54d-8aa3cdc6ced6
+# ╟─01cbddcb-641c-4251-81bb-83637caff93e
 # ╠═7e6becae-5be3-4069-b2f6-139f4b02cf92
+# ╟─a97115d7-f572-4d58-8c9a-a073b17b7b12
 # ╠═4f454802-5399-43dd-928e-89506a78da28
 # ╟─b522ae78-c917-47ca-83c9-ff43771b0603
 # ╟─899f2e2a-ab04-412f-97b2-90269cc14cf6
@@ -496,9 +602,13 @@ end
 # ╠═edd92128-c71e-40da-b325-32425c9d1cf0
 # ╠═55869021-3709-412a-a216-92c035a90f6a
 # ╟─ada1c503-8664-4611-bc0a-3c6ce0a41602
+# ╟─284bf321-935c-421e-8183-eeae4e3fae89
 # ╠═ccb9bbd4-4c2e-474f-8937-b0eb8c235814
 # ╠═91116ccc-25d6-47e5-8624-63a215cec588
+# ╟─2500f256-3d54-4eae-a5df-60267afb2b59
 # ╠═9b096d21-8aa9-42fd-81a5-593942a7a468
+# ╟─2226afd3-aa95-4b9e-9d5b-8addf7b69854
 # ╠═705af09d-7f4f-496c-ac89-29fd461bae4f
 # ╠═0bc81ff1-b5e5-4fff-af12-19c41c750dcd
+# ╟─00a3912f-7b63-4338-ac25-a44cca17e2db
 # ╠═4ba598ff-32ce-4467-9fcb-db3b0c4b3ae2
