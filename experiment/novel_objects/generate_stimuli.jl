@@ -6,7 +6,14 @@ using InteractiveUtils
 
 # ╔═╡ ba3c7e38-a67d-11eb-2fa6-77506c821a76
 begin
-	using DataFrames, CSV, Plots, Random
+    import Pkg
+    Pkg.activate(mktempdir())
+    Pkg.add([
+        Pkg.PackageSpec(name="DataFrames", version="1"),
+        Pkg.PackageSpec(name="CSV", version="0.8"),
+        Pkg.PackageSpec(name="Plots", version="1"),
+    ])
+    using DataFrames, CSV, Plots, Random
 end
 
 # ╔═╡ 9d37c29e-4a35-4438-a560-19175be343e0
@@ -59,14 +66,6 @@ spring_sizes_overlap = intersect(spring_sizes_unimodal, spring_sizes_bimodal)
 
 # ╔═╡ a99b6c1a-588e-4628-878b-c3c2e59285a8
 spring_prices_overlap = rand(rng(), spring_prices, length(spring_sizes_overlap))
-
-# ╔═╡ b7088fa8-1326-44cb-81d2-67145c18cee6
-md"""
-Total number of stimuli, counting overlap items only once.
-"""
-
-# ╔═╡ 364eaf2e-2e98-4c83-bd2d-714cbf1563e7
-total_springs = length(spring_sizes_unimodal) + length(spring_sizes_bimodal) - length(spring_sizes_overlap)
 
 # ╔═╡ d878180e-719e-45cf-8908-207d752f6c07
 md"""
@@ -131,9 +130,6 @@ ball_sizes_overlap = intersect(ball_sizes_unimodal, ball_sizes_bimodal)
 
 # ╔═╡ 4852b506-2e95-413e-97b8-3981d3c3df4e
 ball_prices_overlap = rand(rng(710), ball_prices, length(ball_sizes_overlap))
-
-# ╔═╡ 2dd52507-b319-4c48-a2a6-a37e6b8487ea
-total_balls = length(ball_sizes_unimodal) + length(ball_sizes_bimodal) - length(ball_sizes_overlap)
 
 # ╔═╡ 9ff92ac2-37fc-4f6d-bd76-ff20c0328e8c
 md"""
@@ -322,8 +318,6 @@ CSV.write("./materials/stimuli_data.csv", all_data)
 # ╟─e89ccecf-7c75-46af-affd-d6e668a4816b
 # ╠═a0c67783-86b9-4a7c-ae63-ebae7b941317
 # ╠═a99b6c1a-588e-4628-878b-c3c2e59285a8
-# ╟─b7088fa8-1326-44cb-81d2-67145c18cee6
-# ╠═364eaf2e-2e98-4c83-bd2d-714cbf1563e7
 # ╟─d878180e-719e-45cf-8908-207d752f6c07
 # ╠═f7090a06-d114-486c-807d-7e3c2971b571
 # ╠═924f2986-8427-4581-a376-64b4ba565fcc
@@ -339,7 +333,6 @@ CSV.write("./materials/stimuli_data.csv", all_data)
 # ╟─04dd2cd8-2315-4882-81d0-3567aa85d84d
 # ╠═2dc4302b-6b09-467f-988a-db75a45bbd37
 # ╠═4852b506-2e95-413e-97b8-3981d3c3df4e
-# ╠═2dd52507-b319-4c48-a2a6-a37e6b8487ea
 # ╟─9ff92ac2-37fc-4f6d-bd76-ff20c0328e8c
 # ╠═13398123-ac2a-4262-aec1-bac99f9ac374
 # ╠═1d21ec9f-e165-4544-87b1-1ba9f32805e1
