@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.1
+# v0.14.3
 
 using Markdown
 using InteractiveUtils
@@ -7,13 +7,8 @@ using InteractiveUtils
 # ╔═╡ 254b6cda-8c9c-11eb-1c41-353023a58eea
 begin
     import Pkg
-    Pkg.activate(mktempdir())
-    Pkg.add([
-        Pkg.PackageSpec(name="DataFrames", version="0.22"),
-        Pkg.PackageSpec(name="CSV", version="0.8"),
-        Pkg.PackageSpec(name="Plots", version="1"),
-        Pkg.PackageSpec(name="PlotThemes", version="2"),
-    ])
+    Pkg.activate("../..")
+
     using DataFrames, CSV, Statistics, Plots, PlotThemes
 	theme(:wong, legend=:outerright)
 end

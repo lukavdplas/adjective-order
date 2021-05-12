@@ -1,19 +1,13 @@
 ### A Pluto.jl notebook ###
-# v0.14.0
+# v0.14.3
 
 using Markdown
 using InteractiveUtils
 
 # ╔═╡ 53c045a8-7032-11eb-1e32-979e2d2b7846
 begin
-	#temp environment
     import Pkg
-    Pkg.activate(mktempdir())
-    Pkg.add([
-        Pkg.PackageSpec(name="DataFrames", version="0.22"),
-        Pkg.PackageSpec(name="CSV", version="0.8"),
-        Pkg.PackageSpec(name="Plots", version="1"),
-    ])
+    Pkg.activate("../..")
 	
 	#import packages
     using DataFrames, CSV, Statistics, Plots
