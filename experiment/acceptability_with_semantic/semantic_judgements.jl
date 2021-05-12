@@ -8,6 +8,7 @@ using InteractiveUtils
 begin
     import Pkg
     Pkg.activate("../..")
+	Pkg.instantiate()
 
     using CSV, DataFrames, Plots, PlotThemes, Statistics
 
