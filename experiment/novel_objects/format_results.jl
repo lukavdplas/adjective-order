@@ -6,9 +6,10 @@ using InteractiveUtils
 
 # ╔═╡ a75d2178-8e27-11eb-383b-9d6053581a5a
 begin
+	#activate project environment
     import Pkg
     Pkg.activate("../..")
-
+	
     using CSV, DataFrames
 end
 
@@ -32,7 +33,8 @@ results_raw = CSV.read(
 
 # ╔═╡ 46db08e0-49eb-447e-82da-9cf2b9551176
 results = filter(results_raw) do row
-	row.DistributionChannel == "anonymous" && row.Finished == "True"
+	#row.DistributionChannel == "anonymous" && 
+	row.Finished == true
 	#exclude previews and unfinished responses
 end
 
@@ -44,22 +46,22 @@ item_data = let
 	#hardcoded values
 	data = DataFrame(
 		id = [
-			"tv_test_1", "tv_test_2", "tv_test_3", "tv_test_4",
-			"tv_test_5", "tv_test_6", "tv_test_7", "tv_test_8",
-			"ch_test_1", "ch_test_2", "ch_test_3", "ch_test_4",
-			"ch_test_5", "ch_test_6", "ch_test_7", "ch_test_8",
-			"tv_filler_1", "tv_filler_2", "tv_filler_3", "tv_filler_4",
-			"tv_filler_5", "tv_filler_6", "tv_filler_7", "tv_filler_8",
-			"tv_filler_9", "tv_filler_10",
-			"ch_filler_1", "ch_filler_2", "ch_filler_3", "ch_filler_4",
-			"ch_filler_5", "ch_filler_6", "ch_filler_7", "ch_filler_8",
-			"ch_filler_9", "ch_filler_10"
+			"bl_test_1", "bl_test_2", "bl_test_3", "bl_test_4",
+			"bl_test_5", "bl_test_6", "bl_test_7", "bl_test_8",
+			"sp_test_1", "sp_test_2", "sp_test_3", "sp_test_4",
+			"sp_test_5", "sp_test_6", "sp_test_7", "sp_test_8",
+			"bl_filler_1", "bl_filler_2", "bl_filler_3", "bl_filler_4",
+			"bl_filler_5", "bl_filler_6", "bl_filler_7", "bl_filler_8",
+			"bl_filler_9", "bl_filler_10",
+			"sp_filler_1", "sp_filler_2", "sp_filler_3", "sp_filler_4",
+			"sp_filler_5", "sp_filler_6", "sp_filler_7", "sp_filler_8",
+			"sp_filler_9", "sp_filler_10"
 		],
 		adjectivestring = [
-			"big expensive", "expensive big", "refurbished big", "big refurbished",
-			"big cheap", "cheap big", "big discounted", "discounted big",
-			"long expensive", "expensive long", "leather long", "long leather",
-			"cheap long", "long cheap", "discounted long", "long discounted",
+			"big expensive", "expensive big", "striped big", "big striped",
+			"big cheap", "cheap big", "big plastic", "plastic big",
+			"long expensive", "expensive long", "plastic long", "long plastic",
+			"cheap long", "long cheap", "metal long", "long metal",
 			missing, missing, missing, missing,
 			missing, missing, missing, missing,
 			missing, missing,
@@ -73,10 +75,10 @@ item_data = let
 			missing, missing, missing, missing,
 			missing, missing, missing, missing,
 			"questionable", "questionable", "acceptable", "acceptable",
-			"acceptable", "unacceptable", "unacceptable", "unacceptable",
+			"acceptable", "unacceptable", "questionable", "questionable",
 			"unacceptable", "acceptable",
 			"questionable", "acceptable", "acceptable", "questionable",
-			"questionable", "acceptable", "unacceptable", "unacceptable",
+			"questionable", "acceptable", "questionable", "unacceptable",
 			"acceptable", "unacceptable"
 		]
 	)
@@ -91,10 +93,10 @@ item_data = let
 	end
 	
 	data.scenario = map(data.id) do id
-		if startswith(id, "tv")
-			"tv"
+		if startswith(id, "bl")
+			"ball"
 		else
-			"couch"
+			"spring"
 		end
 	end
 	
@@ -115,12 +117,12 @@ item_data = let
 			"expensive"
 		elseif occursin("cheap", str)
 			"cheap"
-		elseif occursin("discounted", str)
-			"discounted"
-		elseif occursin("leather", str)
-			"leather"
+		elseif occursin("plastic", str)
+			"plastic"
+		elseif occursin("metal", str)
+			"metal"
 		else
-			"refurbished"
+			"striped"
 		end
 	end
 	
@@ -174,8 +176,8 @@ md"### Acceptability judgements"
 # ╔═╡ f57aa7b5-cc63-48da-aa05-00b223a5fd78
 condition_table = DataFrame(
 	"group" => [1,2],
-	"tv" => ["bimodal", "unimodal"],
-	"couch" => ["unimodal", "bimodal"]
+	"ball" => ["bimodal", "unimodal"],
+	"spring" => ["unimodal", "bimodal"]
 )
 
 # ╔═╡ 4000e200-f3b9-4d09-af10-48b8b4ad5a97
@@ -186,16 +188,16 @@ md"""
 # ╔═╡ ef76ed48-c7d2-42a4-b9f9-6fa3bc718114
 semantic_items = let
 	ids = [
-		"tv_sj_big_bim", "tv_sj_big_unim", 
-		"tv_sj_exp_bim", "tv_sj_exp_unim",
-		"ch_sj_long_bim", "ch_sj_long_unim",
-		"ch_sj_exp_bim", "ch_sj_exp_unim",
+		"bl_sj_big_bim", "bl_sj_big_unim", 
+		"bl_sj_exp_bim", "bl_sj_exp_unim",
+		"sp_sj_long_bim", "sp_sj_long_unim",
+		"sp_sj_exp_bim", "sp_sj_exp_unim",
 	]
 	
 	parts(id) = split(id, "_")
 	
 	scenarios = map(ids) do id
-		parts(id)[1] == "tv" ? "tv" : "couch"
+		parts(id)[1] == "bl" ? "ball" : "spring"
 	end
 	
 	adjectives = map(ids) do id
@@ -231,17 +233,10 @@ function parse_answer(answer, scenario)
 	
 	parse_size(item) = let
 		sizestring = item[1]
-		if scenario == "tv"
-			parse(Int64, sizestring)
-		else
-			stripped = strip(sizestring, ['\"'])
-			splitted = split(stripped, r"'")
-			feet, inches = parse.(Int64, splitted)
-			total_inches = inches + 12 * feet
-		end
+		parse(Float64, sizestring)
 	end
 	
-	parse_price(item) = parse(Int64, item[2])
+	parse_price(item) = parse(Float64, item[2])
 	
 	map(clean_items) do item
 		Dict("size" => parse_size(item), "price" => parse_price(item))
@@ -264,7 +259,7 @@ function collect_semantic_judgements(response, scenario, condition, adjective)
 		price = row["price"]
 		ismatch(item) = (item["size"] == size) && (item["price"] == price)
 		
-		id = "sj_" * adjective * "_" * row["index"]
+		id = "sj_" * adjective * "_" * row["id"]
 		selected = any(ismatch.(selection))
 		
 		Dict(
@@ -328,8 +323,8 @@ md"""
 
 # ╔═╡ 9967b13c-4541-4b2e-b566-f4aefca41c9d
 confidence_items = DataFrame(
-	"id" => ["tv_sj_big_con", "tv_sj_exp_con", "ch_sj_long_con", "ch_sj_exp_con"],
-	"scenario" => ["tv", "tv", "couch", "couch"],
+	"id" => ["bl_sj_big_con", "bl_sj_exp_con", "sp_sj_long_con", "sp_sj_exp_con"],
+	"scenario" => ["ball", "ball", "spring", "spring"],
 	"adjective" => ["big", "expensive", "long", "expensive"]
 )
 
@@ -372,7 +367,7 @@ end
 
 # ╔═╡ 787693d9-4111-45f6-b14f-21603783ade3
 function confidence_rating(participant, scenario)
-	adjective = scenario == "tv" ? "big" : "long"
+	adjective = scenario == "ball" ? "big" : "long"
 	
 	data = filter(confidence_results) do row
 		(row.participant == participant) && (row.scenario == scenario) && (row.adj_target == adjective)
@@ -480,17 +475,17 @@ time_results = let
 		
 		time_items = [
 			("time_total", "Duration (in seconds)"),
-			("time_tv", "tv_scenario_time_Page Submit"),
-			("time_couch", "ch_scenario_time_Page Submit")
+			("time_ball", "bl_scenario_time_Page Submit"),
+			("time_spring", "sp_scenario_time_Page Submit")
 		]
 		
 		for (item, colname) in time_items	
 			time = results[participant, colname]
 			
-			condition = if item == "time_tv"
-				condition_table[group, "tv"]
-			elseif item == "time_couch"
-				condition_table[group, "couch"]
+			condition = if item == "time_ball"
+				condition_table[group, "ball"]
+			elseif item == "time_spring"
+				condition_table[group, "spring"]
 			else
 				missing
 			end
@@ -545,10 +540,10 @@ CSV.write("results/results.csv", all_results)
 # ╠═51d61b17-4016-4135-ba2a-f0b0cd893999
 # ╠═a6c045e2-2041-4438-8306-8acd49db9409
 # ╟─5acc86ef-6ff1-43e7-adf2-54112f9fa79b
-# ╟─f57aa7b5-cc63-48da-aa05-00b223a5fd78
+# ╠═f57aa7b5-cc63-48da-aa05-00b223a5fd78
 # ╠═21492ade-a33d-489e-9113-f13bb4251986
 # ╟─4000e200-f3b9-4d09-af10-48b8b4ad5a97
-# ╟─ef76ed48-c7d2-42a4-b9f9-6fa3bc718114
+# ╠═ef76ed48-c7d2-42a4-b9f9-6fa3bc718114
 # ╠═69044955-6953-4517-984a-a3032ad72185
 # ╠═43129d45-0772-467b-ada9-4c7337423973
 # ╠═5c40473f-5e91-4190-ad8a-5de254284041
