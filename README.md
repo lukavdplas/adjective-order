@@ -16,11 +16,11 @@ In my experiments, participants see a selection of objects of different sizes. T
 
 The repository contains data about the experiments I'm conducting, and the code I use for analysis. It's intended as an appendix to my thesis, so it's not self-explanatory.
 
-The [experiments](./experiments) directory has a subdirectory for each experiment.
+The [experiment](./experiment) directory has a subdirectory for each experiment.
 
-* [experiments/acceptability](./experiments/acceptability) is the first experiment.
-* [experiments/acceptability_with_semantic](./experiments/acceptability) is the second experiment, which adds a semantic judgement task to the procedure.
-* [experiments/novel_objects](./experiments/acceptability) is the third experiment. The method is mostly identical to the second experiment, but instead of TVs and couches, the experiment uses fictional objects.
+* [experiment/acceptability](./experiment/acceptability) is the first experiment.
+* [experiment/acceptability_with_semantic](./experiment/acceptability) is the second experiment, which adds a semantic judgement task to the procedure.
+* [experiment/novel_objects](./experiment/acceptability) is the third experiment. The method is mostly identical to the second experiment, but instead of TVs and couches, the experiment uses fictional objects.
 
 Each experiment folder contains some code to process and inspect the results. There is also a subdirectory "materials" with information on stimuli and questions, and a subdirectory "results" with the results.
 
