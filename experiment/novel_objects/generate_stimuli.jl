@@ -7,12 +7,8 @@ using InteractiveUtils
 # ╔═╡ ba3c7e38-a67d-11eb-2fa6-77506c821a76
 begin
     import Pkg
-    Pkg.activate(mktempdir())
-    Pkg.add([
-        Pkg.PackageSpec(name="DataFrames", version="1"),
-        Pkg.PackageSpec(name="CSV", version="0.8"),
-        Pkg.PackageSpec(name="Plots", version="1"),
-    ])
+    Pkg.activate("../..")
+
     using DataFrames, CSV, Plots, Random
 end
 
@@ -233,7 +229,11 @@ spring_data_unimodal = let
 end
 
 # ╔═╡ 525eb273-07fe-4c9a-b9a2-98b20ace0571
-spring_data = vcat(spring_data_overlap, spring_data_bimodal, spring_data_unimodal)
+spring_data = let
+	all_data = vcat(spring_data_overlap, spring_data_bimodal, spring_data_unimodal)
+	all_data.scenario = repeat(["spring"], nrow(all_data))
+	all_data
+end
 
 # ╔═╡ 1d21ec9f-e165-4544-87b1-1ba9f32805e1
 ball_data_bimodal = let
@@ -296,7 +296,12 @@ ball_data_unimodal = let
 end
 
 # ╔═╡ c8448cc0-57bb-4624-9a5c-390a5783f01d
-ball_data = vcat(ball_data_overlap, ball_data_bimodal, ball_data_unimodal)
+ball_data = let
+	all_data = vcat(ball_data_overlap, ball_data_bimodal, ball_data_unimodal)
+	
+	all_data.scenario = repeat(["ball"], nrow(all_data))
+	all_data
+end
 
 # ╔═╡ b1dc7fbb-8eb8-49c6-9a52-09aead876ab8
 all_data = vcat(spring_data, ball_data)

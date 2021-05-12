@@ -1,0 +1,37 @@
+id,adjectivestring,filler_acceptability,item_type,scenario,adj_target,adj_secondary,adj_secondary_type,order
+bl_test_1,big expensive,,test,ball,big,expensive,scalar,first
+bl_test_2,expensive big,,test,ball,big,expensive,scalar,second
+bl_test_3,striped big,,test,ball,big,striped,absolute,second
+bl_test_4,big striped,,test,ball,big,striped,absolute,first
+bl_test_5,big cheap,,test,ball,big,cheap,scalar,first
+bl_test_6,cheap big,,test,ball,big,cheap,scalar,second
+bl_test_7,big plastic,,test,ball,big,plastic,absolute,first
+bl_test_8,plastic big,,test,ball,big,plastic,absolute,second
+sp_test_1,long expensive,,test,spring,long,expensive,scalar,first
+sp_test_2,expensive long,,test,spring,long,expensive,scalar,second
+sp_test_3,plastic long,,test,spring,long,plastic,absolute,second
+sp_test_4,long plastic,,test,spring,long,plastic,absolute,first
+sp_test_5,cheap long,,test,spring,long,cheap,scalar,second
+sp_test_6,long cheap,,test,spring,long,cheap,scalar,first
+sp_test_7,metal long,,test,spring,long,metal,absolute,second
+sp_test_8,long metal,,test,spring,long,metal,absolute,first
+bl_filler_1,,questionable,filler,ball,,,,
+bl_filler_2,,questionable,filler,ball,,,,
+bl_filler_3,,acceptable,filler,ball,,,,
+bl_filler_4,,acceptable,filler,ball,,,,
+bl_filler_5,,acceptable,filler,ball,,,,
+bl_filler_6,,unacceptable,filler,ball,,,,
+bl_filler_7,,questionable,filler,ball,,,,
+bl_filler_8,,questionable,filler,ball,,,,
+bl_filler_9,,unacceptable,filler,ball,,,,
+bl_filler_10,,acceptable,filler,ball,,,,
+sp_filler_1,,questionable,filler,spring,,,,
+sp_filler_2,,acceptable,filler,spring,,,,
+sp_filler_3,,acceptable,filler,spring,,,,
+sp_filler_4,,questionable,filler,spring,,,,
+sp_filler_5,,questionable,filler,spring,,,,
+sp_filler_6,,acceptable,filler,spring,,,,
+sp_filler_7,,questionable,filler,spring,,,,
+sp_filler_8,,unacceptable,filler,spring,,,,
+sp_filler_9,,acceptable,filler,spring,,,,
+sp_filler_10,,unacceptable,filler,spring,,,,
