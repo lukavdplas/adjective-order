@@ -9,6 +9,7 @@ begin
 	#activate project environment
     import Pkg
     Pkg.activate("../..")
+	Pkg.instantiate()
 	
     using CSV, DataFrames
 end
