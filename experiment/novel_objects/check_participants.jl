@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.5
 
 using Markdown
 using InteractiveUtils
@@ -8,9 +8,13 @@ using InteractiveUtils
 begin	
     import Pkg
     Pkg.activate("../..")
-	Pkg.instantiate()
-
-    using DataFrames, CSV, Statistics, Plots
+	
+	try
+    	using DataFrames, CSV, Statistics, Plots
+	catch
+		Pkg.instantiate()
+		using DataFrames, CSV, Statistics, Plots
+	end
 
 	theme(:wong, legend=:outerright) #plot theme
 end
@@ -28,7 +32,13 @@ md"""
 
 ### Native speakers
 
-Any non-native participants?"""
+Are all participants native speakers?"""
+
+# ╔═╡ 32712abf-66a0-41b3-bcbc-5de9e81baf5e
+md"Oh no! Let's see how many are non-native."
+
+# ╔═╡ 5f75473f-4b24-4e34-8d67-549353d8469b
+md"We'll use `is_native` to filter participants later."
 
 # ╔═╡ 5624a07b-8ae8-4985-b720-8accec48bd1b
 md"""
@@ -89,7 +99,7 @@ function filler_correct_count(data; absolute = true)
 end
 
 # ╔═╡ 6d3d96e0-79f3-436c-9e16-824a88e38fa0
-filler_threshold = 0.75
+filler_threshold = 0.7
 
 # ╔═╡ 357879b1-371c-4aa7-bfec-d4b853a109cc
 md"""
@@ -138,6 +148,14 @@ function score_consistency(data::AbstractDataFrame)
 	average_precision(responses, values)
 end
 
+# ╔═╡ 96e88f14-0332-4b2f-9ab3-c312679817ab
+consistency_threshold = 0.8
+
+# ╔═╡ 77ae2222-3b71-439e-80a4-b8b7f957332a
+md"""## Filtered results
+Filter participants and export filtered results.
+"""
+
 # ╔═╡ 49f49cf2-b8b2-44cb-9195-2c2752979257
 md"## Import"
 
@@ -146,8 +164,18 @@ results = CSV.read(
 	"results/results.csv", DataFrame,
 )
 
-# ╔═╡ 7bf19152-9f92-420f-9057-a954499179f3
-any(results[results.id .== "intro_native", :response] .!= "Yes")
+# ╔═╡ 0da400bc-5eb1-442b-a172-90596050cf2b
+function is_native(participant)
+	selection = filter(results) do row
+		row.participant == participant && row.id == "intro_native"
+	end
+	
+	response = first(selection.response)
+	response == "Yes"
+end
+
+# ╔═╡ f00afc92-e90c-4879-aa88-9d934a8eef5d
+format_counts(results, "intro_native", name = "native")
 
 # ╔═╡ ecb597d1-427d-4a70-85c0-ac6ec588a60c
 format_counts(results, "intro_other_langs", name = "other languages")
@@ -177,6 +205,9 @@ end
 # ╔═╡ 2a205bc0-702b-44ee-aaab-a3dd39f64a9b
 participants = unique(results.participant) ;
 
+# ╔═╡ 7bf19152-9f92-420f-9057-a954499179f3
+all(is_native.(participants))
+
 # ╔═╡ 0e5b5a94-e6b1-42d6-bdee-31a2ddfad218
 filler_results = filter(row -> row.item_type .== "filler", results)
 
@@ -192,7 +223,7 @@ end
 
 # ╔═╡ eedc17bf-9518-4450-b2f5-352a68ada5ff
 histogram(participant_filler_scores,
-	bins = range(0.0, 1.05, length = 21),
+	bins = range(0.0, 1.05, length = 13),
 	label = nothing,
 	xlabel = "ratio of fillers correct", ylabel = "# participants"
 )
@@ -249,6 +280,40 @@ histogram(
 	ylabel = "# observations",
 )
 
+# ╔═╡ 51514237-96a1-4478-bdc6-96f683a0a79f
+function semantic_consistency_score(participant)
+	scores = filter(consistency_scores) do row
+		row.participant == participant
+	end
+	
+	mean(scores.AP)
+end
+
+# ╔═╡ 1936ac3b-861b-437e-bdc6-5dd4d94f48ce
+function include_participant(participant)
+	filler_score(participant) = let
+		pdata = filter(row -> row.participant == participant, filler_results)
+		score = filler_correct_count(pdata, absolute = false)
+	end
+	
+	all([
+			is_native(participant),
+			semantic_consistency_score(participant) >= consistency_threshold,
+			filler_score(participant) >= filler_threshold,
+			sd_response(participant) >= 1
+		])
+end
+
+# ╔═╡ 66ac1377-aa46-4c10-85fe-63daeb68ab07
+let
+	total = length(participants)
+	included = count(include_participant, participants)
+	md"Participants excluded: $(total - included) out of $(total)"
+end
+
+# ╔═╡ 86338e1a-46e3-428b-8bf5-0610e435a9a6
+filter(!include_participant, participants)
+
 # ╔═╡ f3498682-38f2-484b-8ab2-29b2efc864ae
 function semantic_judgements(participant, adjective, scenario)
 	res = filter(results) do row
@@ -269,24 +334,6 @@ function semantic_judgements(participant, adjective, scenario)
 	responses, values
 end
 
-# ╔═╡ 77ae2222-3b71-439e-80a4-b8b7f957332a
-md"""## Filtered results
-Filter participants and export filtered results.
-"""
-
-# ╔═╡ 1936ac3b-861b-437e-bdc6-5dd4d94f48ce
-function include_participant(participant)
-	filler_score(participant) = let
-		pdata = filter(row -> row.participant == participant, filler_results)
-		score = filler_correct_count(pdata, absolute = false)
-	end
-	
-	all([
-			filler_score(participant) >= filler_threshold,
-			sd_response(participant) >= 1
-			])
-end
-
 # ╔═╡ 9cb8cc07-5159-4212-8339-0192b08a4b4e
 filtered_results = filter(results) do row
 	include_participant(row["participant"])
@@ -299,6 +346,10 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╟─d03b1c2f-eba4-41ec-ae2b-5c89152a9212
 # ╟─2a989224-fc5e-4220-a0e6-9d38ff7eba0b
 # ╠═7bf19152-9f92-420f-9057-a954499179f3
+# ╠═0da400bc-5eb1-442b-a172-90596050cf2b
+# ╟─32712abf-66a0-41b3-bcbc-5de9e81baf5e
+# ╠═f00afc92-e90c-4879-aa88-9d934a8eef5d
+# ╟─5f75473f-4b24-4e34-8d67-549353d8469b
 # ╟─5624a07b-8ae8-4985-b720-8accec48bd1b
 # ╠═ecb597d1-427d-4a70-85c0-ac6ec588a60c
 # ╟─4e58b1a9-e516-43c3-a12d-a03bf826b63d
@@ -328,10 +379,14 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╠═8f5a4372-fbd6-4aef-a337-6579e0c1e47f
 # ╠═ad88b5e2-1108-421c-b44d-951bd04fcd19
 # ╠═a0642a75-e450-442f-8d1a-d0bfdd94aede
+# ╠═51514237-96a1-4478-bdc6-96f683a0a79f
+# ╠═96e88f14-0332-4b2f-9ab3-c312679817ab
+# ╟─77ae2222-3b71-439e-80a4-b8b7f957332a
+# ╠═1936ac3b-861b-437e-bdc6-5dd4d94f48ce
+# ╠═66ac1377-aa46-4c10-85fe-63daeb68ab07
+# ╠═86338e1a-46e3-428b-8bf5-0610e435a9a6
+# ╠═9cb8cc07-5159-4212-8339-0192b08a4b4e
+# ╠═06fe2b77-b932-46c7-a712-5dfe670c710a
 # ╟─49f49cf2-b8b2-44cb-9195-2c2752979257
 # ╠═254b6cda-8c9c-11eb-1c41-353023a58eea
 # ╠═047ecfd6-37ca-4a1c-91a7-2638faaa2bb6
-# ╟─77ae2222-3b71-439e-80a4-b8b7f957332a
-# ╠═1936ac3b-861b-437e-bdc6-5dd4d94f48ce
-# ╠═9cb8cc07-5159-4212-8339-0192b08a4b4e
-# ╠═06fe2b77-b932-46c7-a712-5dfe670c710a
