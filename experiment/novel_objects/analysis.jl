@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.5
 
 using Markdown
 using InteractiveUtils
@@ -8,9 +8,13 @@ using InteractiveUtils
 begin
     import Pkg
     Pkg.activate("../..")
-	Pkg.instantiate()
 
-    using DataFrames, CSV, Statistics, Plots, PlotThemes
+    try
+		using DataFrames, CSV, Statistics, Plots
+	catch
+		Pkg.instantiate()
+		using DataFrames, CSV, Statistics, Plots
+	end
 
 	theme(:wong, legend=:outerright) #plot theme
 end
@@ -140,7 +144,7 @@ condition_confidence_results = combine(
 
 # ╔═╡ 043d1865-7a2d-4c3d-86de-e123eecfdf5f
 let
-	p = plot(xticks = 1:5, xlims = (4, 5),
+	p = plot(xticks = 1:5, xlims = (1, 5),
 		xlabel = "confidence rating",
 		ylabel = "mean acceptability rating"
 	)
@@ -394,7 +398,7 @@ function plot_aggregated_responses(data)
 	p = plot(
 		xlabel = "position target adjective",
 		ylabel = "mean acceptability",
-		ylims = (3,5)
+		ylims = (2,5)
 	)
 	plot!(p, 
 		aggregated_responses.target_position,

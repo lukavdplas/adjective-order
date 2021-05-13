@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.5
 
 using Markdown
 using InteractiveUtils
@@ -34,8 +34,7 @@ results_raw = CSV.read(
 
 # ╔═╡ 46db08e0-49eb-447e-82da-9cf2b9551176
 results = filter(results_raw) do row
-	#row.DistributionChannel == "anonymous" && 
-	row.Finished == true
+	row.DistributionChannel == "anonymous" && row.Finished == true
 	#exclude previews and unfinished responses
 end
 
