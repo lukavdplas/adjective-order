@@ -9,12 +9,7 @@ begin
     import Pkg
     Pkg.activate("../..")
 
-	try
-    	using CSV, DataFrames, Plots, Statistics
-	catch
-		Pkg.instantiate()
-		using CSV, DataFrames, Plots, Statistics
-	end
+	using CSV, DataFrames, Plots, Statistics
 
 	theme(:wong, legend=:outerright)
 end
