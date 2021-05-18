@@ -13,7 +13,7 @@ begin
 	try
 		using DataFrames, CSV, Plots
 	catch
-		Pkg.instantiate
+		Pkg.instantiate()
 		using DataFrames, CSV, Plots
 	end
 	
