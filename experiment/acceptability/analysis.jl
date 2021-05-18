@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.5
 
 using Markdown
 using InteractiveUtils
@@ -8,10 +8,14 @@ using InteractiveUtils
 begin
     import Pkg
     Pkg.activate("../..")
-	Pkg.instantiate()
 	
 	#import packages
-    using DataFrames, CSV, Statistics, Plots
+	try
+		using DataFrames, CSV, Statistics, Plots
+	catch
+		Pkg.instantiate()
+		using DataFrames, CSV, Statistics, Plots
+	end
 	
 	theme(:wong, legend=:outerright) #plot theme
 end

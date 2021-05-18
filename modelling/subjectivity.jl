@@ -7,12 +7,14 @@ using InteractiveUtils
 # ╔═╡ 14d59268-9967-11eb-3a11-b388759a33c4
 begin
     import Pkg
-    Pkg.activate(mktempdir())
-    Pkg.add([
-        Pkg.PackageSpec(name="CSV", version="0.8"),
-        Pkg.PackageSpec(name="DataFrames", version="0.22"),
-    ])
-    using CSV, DataFrames, Statistics
+    Pkg.activate(".")
+
+    try
+		using CSV, DataFrames, Statistics
+	catch
+		Pkg.instantiate()
+		using CSV, DataFrames, Statistics
+	end
 end
 
 # ╔═╡ 0629eb23-887f-45e1-8296-015fae7fba62
