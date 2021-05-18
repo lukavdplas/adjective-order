@@ -16,17 +16,14 @@ end
 # ╔═╡ 9e79889a-9baf-11eb-1e2d-59906f90ea82
 begin
     import Pkg
-    Pkg.activate(mktempdir())
-    Pkg.add([
-        Pkg.PackageSpec(name="CSV", version="0.8"),
-        Pkg.PackageSpec(name="DataFrames", version="1"),
-        Pkg.PackageSpec(name="Distributions", version="0.24"),
-        Pkg.PackageSpec(name="Plots", version="1"),
-        Pkg.PackageSpec(name="StatsPlots", version="0.14"),
-        Pkg.PackageSpec(name="PlutoUI", version="0.7"),
-        Pkg.PackageSpec(name="Optim", version="1"),
-    ])
-    using CSV, DataFrames, Distributions, Plots, StatsPlots, PlutoUI, Optim
+    Pkg.activate(".")
+
+    try
+		using CSV, DataFrames, Distributions, Plots, StatsPlots, PlutoUI, Optim
+	catch
+		Pkg.instantiate()
+		using CSV, DataFrames, Distributions, Plots, StatsPlots, PlutoUI, Optim
+	end
 end
 
 # ╔═╡ 2337edd6-894c-442d-bdf3-d1b9775dce4b
