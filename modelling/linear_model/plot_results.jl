@@ -14,7 +14,7 @@ begin
 		using DataFrames, CSV, Plots
 	catch
 		Pkg.instantiate
-		using DataFrmes, CSV, Plots
+		using DataFrames, CSV, Plots
 	end
 	
 	theme(:wong, legend = :outertop)
