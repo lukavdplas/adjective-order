@@ -41,6 +41,7 @@ jobs:
 
                   PlutoSliderServer.github_action(;
                     Export_cache_dir="pluto_state_cache",
+                    Export_ignore_cache = ["index.jl"],
                   );'
 
 
