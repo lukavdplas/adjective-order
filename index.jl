@@ -85,7 +85,10 @@ end ;
 # ╔═╡ 0ee61c5c-cde8-4d96-ad51-cf8ea2acf35a
 function is_notebook(path, filename)
 	if endswith(filename, ".jl")
-		true
+		text = open(path * "/" * filename) do file
+			read(file, String)
+		end
+		startswith(text, "### A Pluto.jl notebook ###")
 	else
 		false
 	end
