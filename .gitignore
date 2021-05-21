@@ -61,10 +61,13 @@ deps/src/
 docs/build/
 docs/site/
 
-# Results
+#Own ignores
 
+# Results
 results_raw.csv
 
 # Prolific id script
-
 prolific_ids.jl
+
+#Figures export folder
+figures/

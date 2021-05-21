@@ -138,6 +138,11 @@ md"**Selection of 'expensive' for springs**"
 # ╔═╡ 28b5e4c2-62c0-482d-91bc-14e85c6bc100
 md"**Selection of 'long' for springs**"
 
+# ╔═╡ 4913f741-6f04-4bf8-8844-cc0a42a6d08b
+md"""
+### Export plots
+"""
+
 # ╔═╡ a3a9b479-cb0b-49e3-a710-0a0b13c1312d
 md"""
 ## General functions
@@ -284,6 +289,10 @@ function plot_sample_histogram(adjective, scenario, condition = "bimodal"; kwarg
 		maximum(get_bounds(adjective, scenario)) * 2 + 1
 	end
 	
+	max_count = maximum(unique(measures)) do size
+		count(item -> item == size, measures)
+	end
+	
 	histogram(measures,
 		bins = nbins,
 		color = 2,
@@ -291,6 +300,7 @@ function plot_sample_histogram(adjective, scenario, condition = "bimodal"; kwarg
 		label = nothing;
 		xlabel = scale_label(scale),
 		ylabel = "N($(scale))",
+		yticks = 1:max_count,
 		xlims = get_bounds(adjective, scenario)
 	)
 end
@@ -335,6 +345,18 @@ let
 		layout = (2,2))
 end
 
+# ╔═╡ 8d7f53ad-2f6c-494c-a3a8-f71afd9a625b
+for scenario in ["ball", "spring"]
+	adj_target = scenario == "ball" ? "big" : "long"
+	for adjective in [adj_target, "expensive"]
+		for condition in ["bimodal", "unimodal"]
+			p = plot_sample_histogram(adjective, scenario, condition)
+			path = "../../figures/stimuli_histogram_$(adjective)_$(scenario)_$(condition).pdf"
+			savefig(p, path)
+		end
+	end
+end
+
 # ╔═╡ Cell order:
 # ╟─ace7cca0-a2c2-40f2-a6c4-29f88bfc6e58
 # ╟─f29b7732-246f-4947-bf15-a3ae6d99682e
@@ -366,6 +388,8 @@ end
 # ╠═aa2655d1-2c8b-443a-9439-e636498f125e
 # ╟─28b5e4c2-62c0-482d-91bc-14e85c6bc100
 # ╠═afc58be4-6e79-424a-bfb7-0d94ec4e5130
+# ╟─4913f741-6f04-4bf8-8844-cc0a42a6d08b
+# ╠═8d7f53ad-2f6c-494c-a3a8-f71afd9a625b
 # ╟─a3a9b479-cb0b-49e3-a710-0a0b13c1312d
 # ╠═9262a9cc-3edc-46e8-b47b-c643467a990f
 # ╠═5a7e5a60-29f9-414e-bada-f7787ba61b18
