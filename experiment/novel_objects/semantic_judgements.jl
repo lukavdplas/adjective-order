@@ -118,8 +118,53 @@ end
 
 # ╔═╡ 820a79b9-b295-43aa-8bd0-cce8d8ba76ba
 md"""
-## Stimuli histogram
+## Stimuli descriptives & histogram
 """
+
+# ╔═╡ c6b20706-0115-4602-98ee-d7e22e986fec
+function all_descriptives(scenario)
+	data = filter(row -> row.scenario == scenario, stimuli_data)
+	
+	sizes_unimodal = data[data.unimodal, :size]
+	prices = data[data.unimodal, :price]
+	sizes_bimodal = data[data.bimodal, :size]
+	threshold = scenario == "ball" ? 10 : 20
+	sizes_bimodal_low = let
+		items = filter(data) do row
+			row.bimodal && (row.size < threshold)
+		end
+		items.size
+	end
+	sizes_bimodal_high = let
+		items = filter(data) do row
+			row.bimodal && (row.size > threshold)
+		end
+		items.size
+	end
+	
+	data_per_cat = DataFrame(
+		value = [prices ; sizes_unimodal ; sizes_bimodal ;
+			sizes_bimodal_low ; sizes_bimodal_high],
+		category = [
+			repeat(["prices"], length(prices));
+			repeat(["sizes_unimodal"], length(sizes_unimodal));
+			repeat(["sizes_bimodal"], length(sizes_bimodal));
+			repeat(["sizes_bimodal_low"], length(sizes_bimodal_low));
+			repeat(["sizes_bimodal_high"], length(sizes_bimodal_high))
+		]
+	)
+	
+	combine(groupby(data_per_cat, :category),
+		:value => mean,
+		:value => std,
+	)
+end
+
+# ╔═╡ 93c41a8a-d25c-4efa-b860-adcee8cc9c89
+all_descriptives("ball")
+
+# ╔═╡ a6abf963-0ca0-4089-b36b-67869a1b363b
+all_descriptives("spring")
 
 # ╔═╡ dcef9229-6f95-40f9-b3ac-93aca1ba117c
 md"""
@@ -351,7 +396,8 @@ for scenario in ["ball", "spring"]
 	for adjective in [adj_target, "expensive"]
 		for condition in ["bimodal", "unimodal"]
 			p = plot_sample_histogram(adjective, scenario, condition)
-			path = "../../figures/stimuli_histogram_$(adjective)_$(scenario)_$(condition).pdf"
+			scale = get_scale(adjective)
+			path = "../../figures/stimuli_histogram_$(scenario)_$(scale)_$(condition).pdf"
 			savefig(p, path)
 		end
 	end
@@ -378,6 +424,9 @@ end
 # ╠═4d9f6cf7-9c45-44b5-a7fa-90f5b49004fc
 # ╠═83e46121-1ced-4dd2-b733-3d9966fec148
 # ╟─820a79b9-b295-43aa-8bd0-cce8d8ba76ba
+# ╠═c6b20706-0115-4602-98ee-d7e22e986fec
+# ╠═93c41a8a-d25c-4efa-b860-adcee8cc9c89
+# ╠═a6abf963-0ca0-4089-b36b-67869a1b363b
 # ╠═17913ee9-5b69-425d-9ab0-fee4a29e4832
 # ╟─dcef9229-6f95-40f9-b3ac-93aca1ba117c
 # ╟─f36af399-85f5-4852-9782-acd32b0a6acb

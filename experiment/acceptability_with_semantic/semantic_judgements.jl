@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.5
 
 using Markdown
 using InteractiveUtils
@@ -53,13 +53,13 @@ end
 # ╔═╡ 21bd0056-f2f3-4a25-9919-2a30a59a73bc
 function get_bounds(adjective, scenario)
 	if adjective == "big"
-		return (20, 86)
+		return (0, 100)
 	elseif adjective == "long"
-		return (40, 116)
+		return (0, 150)
 	elseif scenario == "tv" #so adjective == "expensive" must be true
-		return (100, 4600)
+		return (0, 5000)
 	else
-		return (180, 1200)
+		return (0, 1500)
 	end
 end
 
@@ -98,8 +98,57 @@ end
 
 # ╔═╡ 820a79b9-b295-43aa-8bd0-cce8d8ba76ba
 md"""
-## Stimuli histogram
+## Stimuli descriptives & histogram
 """
+
+# ╔═╡ d37b5466-1322-4c80-a824-20ff555588c8
+function all_descriptives(scenario)
+	data = filter(row -> row.scenario == scenario, stimuli_data)
+	
+	sizes_unimodal = data[data.unimodal, :size]
+	prices_unimodal = data[data.unimodal, :price]
+	sizes_bimodal = data[data.bimodal, :size]
+	threshold = scenario == "tv" ? 50 : 80
+	sizes_bimodal_low = let
+		items = filter(data) do row
+			row.bimodal && (row.size < threshold)
+		end
+		items.size
+	end
+	sizes_bimodal_high = let
+		items = filter(data) do row
+			row.bimodal && (row.size > threshold)
+		end
+		items.size
+	end
+	prices_bimodal = data[data.bimodal, :price]
+	
+	data_per_cat = DataFrame(
+		value = [prices_unimodal ; prices_bimodal ; 
+			sizes_unimodal ; sizes_bimodal ;
+			sizes_bimodal_low ; sizes_bimodal_high],
+		category = [
+			repeat(["prices_unimodal"], length(prices_unimodal));
+			repeat(["prices_bimodal"], length(prices_bimodal));
+			repeat(["sizes_unimodal"], length(sizes_unimodal));
+			repeat(["sizes_bimodal"], length(sizes_bimodal));
+			repeat(["sizes_bimodal_low"], length(sizes_bimodal_low));
+			repeat(["sizes_bimodal_high"], length(sizes_bimodal_high))
+		]
+	)
+	
+	combine(groupby(data_per_cat, :category),
+		:value => mean,
+		:value => std,
+		:value => median
+	)
+end
+
+# ╔═╡ e8bd45b7-e8bd-4b48-bb67-3dab6e9dc8c3
+all_descriptives("tv")
+
+# ╔═╡ 4f12bc36-da4f-49bf-87d0-46d4ff500431
+all_descriptives("couch")
 
 # ╔═╡ dcef9229-6f95-40f9-b3ac-93aca1ba117c
 md"""
@@ -117,6 +166,9 @@ md"**Selection of 'expensive' for couches**"
 
 # ╔═╡ 28b5e4c2-62c0-482d-91bc-14e85c6bc100
 md"**Selection of 'long' for couches**"
+
+# ╔═╡ fc676ddd-da2c-4ced-a757-c98e33f8fad3
+md"## Export plots"
 
 # ╔═╡ a3a9b479-cb0b-49e3-a710-0a0b13c1312d
 md"""
@@ -286,6 +338,19 @@ let
 		layout = (2,2))
 end
 
+# ╔═╡ a10dd3a6-0f95-4bc0-8807-47bfadb52535
+for scenario in ["tv", "couch"]
+	adj_target = scenario == "tv" ? "big" : "long"
+	for adjective in [adj_target, "expensive"]
+		for condition in ["bimodal", "unimodal"]
+			p = plot_sample_histogram(adjective, scenario, condition)
+			scale = get_scale(adjective)
+			path = "../../figures/stimuli_histogram_$(scenario)_$(scale)_$(condition).pdf"
+			savefig(p, path)
+		end
+	end
+end
+
 # ╔═╡ Cell order:
 # ╟─ace7cca0-a2c2-40f2-a6c4-29f88bfc6e58
 # ╟─f29b7732-246f-4947-bf15-a3ae6d99682e
@@ -303,6 +368,9 @@ end
 # ╠═4d9f6cf7-9c45-44b5-a7fa-90f5b49004fc
 # ╠═83e46121-1ced-4dd2-b733-3d9966fec148
 # ╟─820a79b9-b295-43aa-8bd0-cce8d8ba76ba
+# ╠═d37b5466-1322-4c80-a824-20ff555588c8
+# ╠═e8bd45b7-e8bd-4b48-bb67-3dab6e9dc8c3
+# ╠═4f12bc36-da4f-49bf-87d0-46d4ff500431
 # ╠═17913ee9-5b69-425d-9ab0-fee4a29e4832
 # ╟─dcef9229-6f95-40f9-b3ac-93aca1ba117c
 # ╟─f36af399-85f5-4852-9782-acd32b0a6acb
@@ -313,6 +381,8 @@ end
 # ╠═aa2655d1-2c8b-443a-9439-e636498f125e
 # ╟─28b5e4c2-62c0-482d-91bc-14e85c6bc100
 # ╠═afc58be4-6e79-424a-bfb7-0d94ec4e5130
+# ╟─fc676ddd-da2c-4ced-a757-c98e33f8fad3
+# ╠═a10dd3a6-0f95-4bc0-8807-47bfadb52535
 # ╟─a3a9b479-cb0b-49e3-a710-0a0b13c1312d
 # ╠═9262a9cc-3edc-46e8-b47b-c643467a990f
 # ╠═5a7e5a60-29f9-414e-bada-f7787ba61b18

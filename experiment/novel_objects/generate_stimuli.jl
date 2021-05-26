@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.5
 
 using Markdown
 using InteractiveUtils
@@ -8,9 +8,14 @@ using InteractiveUtils
 begin
     import Pkg
     Pkg.activate("../..")
-	Pkg.instantiate()
 
-    using DataFrames, CSV, Plots, Random
+    try
+		using DataFrames, CSV, Plots, Random
+	catch
+		Pkg.instantiate()
+		using DataFrames, CSV, Plots, Random
+	end
+
 end
 
 # ╔═╡ 9d37c29e-4a35-4438-a560-19175be343e0
