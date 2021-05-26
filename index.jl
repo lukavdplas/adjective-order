@@ -102,8 +102,10 @@ function format_directory(path)
 	header = directory == "." ? "" : "<b>📁 $(directory)</b>"
 	
 	dir_representations = map(dirs) do dir
-		if dir == ".git" || dir == ".github"
+		if dir ∈ [".git", ".github", "pluto_state_cache"]
 			""
+		elseif dir == "images"
+			"<li> <b>📁 images</b> </li>"
 		else
 			"<li> " * format_directory(root * "/" * dir) * "</li>"
 		end
@@ -115,13 +117,17 @@ function format_directory(path)
 	end
 	
 	file_representations = map(files) do filename
-		link = if is_notebook(path, filename)
-			format_notebook(root, filename)
+		if endswith(filename, ".html") && (filename[1:end-5] * ".jl") ∈ files
+			""
 		else
-			format_other_file(root, filename)
+			link = if is_notebook(path, filename)
+				format_notebook(root, filename)
+			else
+				format_other_file(root, filename)
+			end
+
+			"<li> $(link)</li>"
 		end
-		
-		"<li> $(link)</li>"
 	end
 	
 	file_block = let
