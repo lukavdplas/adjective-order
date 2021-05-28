@@ -50,11 +50,11 @@ My definition is loose on items of equal size because that makes the calculation
 """
 
 # ╔═╡ cbb00ae3-7727-4caf-89be-adcb1af27c35
-function is_monotonous(sequence::Array{Bool})
+function is_monotonic(sequence::Array{Bool})
 	if all(sequence) || !any(sequence)
 		true
 	else
-		!(sequence[1]) && is_monotonous(sequence[2:end])
+		!(sequence[1]) && is_monotonic(sequence[2:end])
 	end
 end
 
@@ -62,15 +62,6 @@ end
 md"""
 ## Selection probabilities
 """
-
-# ╔═╡ d73c5f6c-b5b5-41b2-8af4-2ec7bab6f747
-function selection_probability(stimulus_id::String, data::DataFrame)
-	stimulus_data = data[data.id .== stimulus_id, :]
-	
-	responses = parse.(Bool, stimulus_data.response)
-	
-	count(responses) / length(responses)
-end
 
 # ╔═╡ 21bd0056-f2f3-4a25-9919-2a30a59a73bc
 function get_bounds(adjective, scenario)
@@ -211,7 +202,7 @@ function include_data(data)
 		values = sorted_data.response
 		bool_array = collect(values .== "true")
 	end
-	is_monotonous(responses)
+	is_monotonic(responses)
 end
 
 # ╔═╡ 38232c1a-6f47-443c-8cdf-c281fe89dbf5
@@ -266,10 +257,15 @@ function plot_selection_results(adjective, scenario, condition = nothing; kwargs
 		count(responses) / length(responses)
 	end
 	
-	plot(measures, probabilities,
+	bounds = get_bounds(adjective, scenario)
+	
+	plot(
+		[measures; bounds[2]], 
+		[probabilities; 1],
+		linetype = :steppost,
 		fill = 0, linecolor = :black,
 		ylims = (0,1), 
-		xlims = get_bounds(adjective, scenario),
+		xlims = bounds,
 		label = nothing,
 		ylabel = "P(selected | $(scale))",
 		xlabel = scale_label(scale);
@@ -352,8 +348,8 @@ end
 
 # ╔═╡ 8e27b617-b904-4eef-86a3-38560e7bac73
 plot(
-	#plot_selection_results("expensive", "ball"),
-	plot_thresholds("expensive", "ball"),
+	plot_selection_results("expensive", "ball"),
+	#plot_thresholds("expensive", "ball"),
 	plot_sample_histogram("expensive", "ball"),
 	layout = (2,1)
 )
@@ -361,10 +357,10 @@ plot(
 # ╔═╡ 2d164b37-4da8-45ba-836e-510a2c42d05e
 let
 	plot(
-		#plot_selection_results("big", "ball", "unimodal", title = "unimodal"),
-		#plot_selection_results("big", "ball", "bimodal", title = "bimodal"),
-		plot_thresholds("big", "ball", "unimodal", title = " unimodal"),
-		plot_thresholds("big", "ball", "bimodal", title = "bimodal"),
+		plot_selection_results("big", "ball", "unimodal", title = "unimodal"),
+		plot_selection_results("big", "ball", "bimodal", title = "bimodal"),
+		#plot_thresholds("big", "ball", "unimodal", title = " unimodal"),
+		#plot_thresholds("big", "ball", "bimodal", title = "bimodal"),
 		plot_sample_histogram("big", "ball", "unimodal"),
 		plot_sample_histogram("big", "ball", "bimodal"),
 		layout = (2,2))
@@ -372,8 +368,8 @@ end
 
 # ╔═╡ aa2655d1-2c8b-443a-9439-e636498f125e
 plot(
-	#plot_selection_results("expensive", "spring"),
-	plot_thresholds("expensive", "spring"),
+	plot_selection_results("expensive", "spring"),
+	#plot_thresholds("expensive", "spring"),
 	plot_sample_histogram("expensive", "spring"),
 	layout = (2,1)
 )
@@ -381,10 +377,10 @@ plot(
 # ╔═╡ afc58be4-6e79-424a-bfb7-0d94ec4e5130
 let
 	plot(
-		#plot_selection_results("long", "spring", "unimodal", title = "unimodal"),
-		#plot_selection_results("long", "spring", "bimodal", title = "bimodal"),
-		plot_thresholds("long", "spring", "unimodal", title = "unimodal"),
-		plot_thresholds("long", "spring", "bimodal", title = " bimodal"),
+		plot_selection_results("long", "spring", "unimodal", title = "unimodal"),
+		plot_selection_results("long", "spring", "bimodal", title = "bimodal"),
+		#plot_thresholds("long", "spring", "unimodal", title = "unimodal"),
+		#plot_thresholds("long", "spring", "bimodal", title = " bimodal"),
 		plot_sample_histogram("long", "spring", "unimodal"),
 		plot_sample_histogram("long", "spring", "bimodal"),
 		layout = (2,2))
@@ -415,7 +411,6 @@ end
 # ╠═cc3b7a32-f0c5-4a0a-a708-e0b382f7e90a
 # ╠═38232c1a-6f47-443c-8cdf-c281fe89dbf5
 # ╟─c9718d2e-21e9-4379-8ce7-0c0d6a97ca2f
-# ╠═d73c5f6c-b5b5-41b2-8af4-2ec7bab6f747
 # ╠═21bd0056-f2f3-4a25-9919-2a30a59a73bc
 # ╠═8842788c-177d-418a-9578-3ee5e0466c39
 # ╟─5fb90c52-f4eb-40be-81b7-2f86019f2e9c

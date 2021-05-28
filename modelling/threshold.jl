@@ -16,7 +16,7 @@ end
 # ╔═╡ 9e79889a-9baf-11eb-1e2d-59906f90ea82
 begin
     import Pkg
-    Pkg.activate(".")
+    Pkg.activate("..")
 
     try
 		using CSV, DataFrames, Distributions, Plots, StatsPlots, PlutoUI, Optim
