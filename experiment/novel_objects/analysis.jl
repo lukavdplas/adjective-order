@@ -24,6 +24,9 @@ md"""
 ## Import
 """
 
+# ╔═╡ a3e59e50-ee23-443a-a631-f2a25bc96f88
+figures_path = "../../figures/"
+
 # ╔═╡ fb243fdd-76ce-4ea2-b38c-d3450e9b01b1
 all_results =  CSV.read(
 	"results/results_filtered.csv", DataFrame,
@@ -144,7 +147,8 @@ condition_confidence_results = combine(
 
 # ╔═╡ 043d1865-7a2d-4c3d-86de-e123eecfdf5f
 let
-	p = plot(xticks = 1:5, xlims = (1, 5),
+	p = plot(xticks = 1:5, 
+		xlims = (1, 5), ylims = (1,5),
 		xlabel = "confidence rating",
 		ylabel = "mean acceptability rating"
 	)
@@ -169,6 +173,9 @@ let
 	p
 end
 
+# ╔═╡ f6e38d97-a563-4825-a6e4-2a4413110a88
+md"Separated by order:"
+
 # ╔═╡ 215219a4-47a6-4c5f-b1e0-0c8c270ff3f3
 md"""
 ## General functions
@@ -176,6 +183,120 @@ md"""
 
 # ╔═╡ 2e9afc98-7e13-45e5-ba23-d0daa4d8afb2
 scale = 1:5
+
+# ╔═╡ 9ca85756-6c6c-4e45-ae6b-490d70070776
+confidence_plot = let
+	percentile(adjective, condition,rating) = let
+		subdata = filter(confidence_results) do row
+			row.condition == condition && row.adj_target == adjective
+		end
+		responses = subdata.response
+		count(r -> r <= rating, responses) / length(responses)
+	end
+	
+	xticklabels =  [
+		"bimodal\nbig", "unimodal\nbig", 
+		"bimodal\nlong", "unimodal\nlong",
+		"bimodal\nexpensive", "unimodal\nexpensive"]
+	
+	p = plot(
+		xlabel = "condition + adjective",
+		ylabel = "fraction of responses",
+		legendtitle = "rating",
+		xticks = ([1,2,4,5,7,8], xticklabels),
+		xtickfontsize = 6, legendtitlefontsize = 10,
+	)
+	
+	adjectives = ["big", "long", "expensive"]
+	conditions = ["bimodal", "unimodal"]
+	
+	for condition in conditions
+		pal = let
+			c1_index = condition == "bimodal" ? 1 : :2 
+			c1 = PlotThemes.wong_palette[c1_index]
+			palette(cgrad([:white, c1], 5, categorical = true))
+		end
+
+		for rating in reverse(scale)
+			bar_positions = [1,4,7] .+ (condition == "unimodal")
+			percentiles = map(adj -> percentile(adj, condition, rating), adjectives)
+
+			bar!(p,
+				bar_positions, 
+				percentiles,
+				palette = pal,
+				fillcolor = rating,
+				bar_width = 0.7,
+				label = rating,
+			)
+		end
+	end
+	
+	p
+end
+
+# ╔═╡ c1474675-5cfd-426c-8faa-8539d1f58c88
+savefig(confidence_plot, figures_path * "confidence_ratings_exp3.pdf")
+
+# ╔═╡ c19d6921-9744-4fa3-9ff7-db9c9b13cb50
+function plot_acceptability_by_confidence(data; condition = :none, kwargs...)
+	percentile(confidence, acceptability) = let
+		subdata = filter(data) do row
+			row.confidence_on_semantic == confidence
+		end
+		responses = subdata.response
+		count(r -> r <= acceptability, responses) / length(responses)
+	end
+	
+	p = plot(
+		xlabel = "confidence on semantic task",
+		ylabel = "fraction of responses",
+		legendtitle = "acceptability",
+		xticks = scale
+	)
+	
+	pal = let
+		c1_index = if condition == :bimodal
+			1
+		elseif condition == :unimodal
+			2
+		else
+			3
+		end 
+		c1 = PlotThemes.wong_palette[c1_index]
+		palette(cgrad([:white, c1], 5, categorical = true))
+	end
+
+	for rating in reverse(scale)
+		percentiles = map(c -> percentile(c, rating), scale)
+
+		bar!(p,
+			scale, 
+			percentiles,
+			palette = pal,
+			fillcolor = rating,
+			label = rating,
+		)
+	end
+	
+	plot!(p; kwargs...)
+	
+	p
+end
+
+# ╔═╡ f71a234a-f1b2-4266-8a0f-ce41d5b9869e
+plot_acceptability_by_confidence(test_results)
+
+# ╔═╡ 6537a221-1d99-473c-83c3-d9307126b05c
+let
+	first_data = filter(row -> row.order == "first", test_results)
+	p1 = plot_acceptability_by_confidence(first_data, title = "target first")
+
+	second_data = filter(row -> row.order == "second", test_results)
+	p2 = plot_acceptability_by_confidence(second_data, title = "target second")
+
+	plot(p1, p2, layout = (2,1))
+end
 
 # ╔═╡ 7b2998f7-dc66-49b4-9d0d-71a7b357df38
 function response_counts(responses)
@@ -236,137 +357,6 @@ let
 	)
 end
 
-# ╔═╡ 3c5c9818-33af-4cbe-921c-010f78a059bb
-function discrete_violin!(plot::Plots.Plot, x::AbstractArray, y::AbstractArray;
-		position = :center,
-		kwargs...
-	)
-	
-	x_set = sort(unique(x))
-	#y_set = sort(unique(y))
-	y_set = scale
-	for (i, x_value) in enumerate(x_set)
-		hits = x .== x_value
-		y_values = y[hits]
-
-		counts = map(y_set) do value
-			count(y_values .== value)
-		end
-
-		normalised_counts = counts ./ (1.5 * sum(counts))
-		
-		for (j, value) in enumerate(normalised_counts)
-			x1, x2 = if position == :center
-				(i - 0.5value, i + 0.5value)
-			elseif position == :right
-				(i, i + value)
-			else
-				(i - value, i)
-			end
-			y1 = j + 0.5
-			y2 = j - 0.5
-			primary = i ==1 && j == 1
-			
-			rectangle = Shape([(x1, y1), (x1, y2), (x2, y2), (x2, y1)])
-			plot!(plot, rectangle, primary = primary; kwargs...)
-			
-		end
-		
-	end
-	
-	plot!(plot,
-		xticks = (1:length(x_set), x_set),
-		yticks = (1:length(y_set), y_set)
-	)
-end
-
-# ╔═╡ fd6e1104-3b34-49fa-9032-336fe42a0e8a
-let
-	p = plot(xlabel = "adjective", ylabel = "confidence rating")
-	
-	target_data = confidence_results[confidence_results.adj_target .!= "expensive", :]
-	
-	bimodal_data = target_data[target_data.condition .== "bimodal", :]
-	unimodal_data = target_data[target_data.condition .== "unimodal", :]
-	
-	discrete_violin!(p,
-		bimodal_data.adj_target,
-		bimodal_data.response,
-		label = "bimodal",
-		position = :left,
-	)
-	discrete_violin!(p,
-		unimodal_data.adj_target,
-		unimodal_data.response,
-		label = "unimodal",
-		position = :right
-	)
-end
-
-# ╔═╡ f99af668-ddae-414f-ad51-17c58f2d4b84
-let
-	combinations = (sort ∘ unique ∘ zip)(test_results.adj_target, test_results.adj_secondary)
-	
-	plots = map(combinations) do (target, secondary)
-		data = test_results[test_results.adj_target .== target, :]
-		data = data[data.adj_secondary .== secondary, :]
-		
-		bimodal_data = data[data.condition .== "bimodal", :]
-		unimodal_data = data[data.condition .== "unimodal", :]
-	
-	
-		p = plot(
-			title = target * " - " * secondary,
-			legend = nothing,
-		)
-		discrete_violin!(p, 
-			bimodal_data.order, bimodal_data.response,
-			position = :left,
-			label = "bimodal",
-		)
-		discrete_violin!(p, 
-			unimodal_data.order, unimodal_data.response,
-			position = :right,
-			label = "unimodal",
-		)
-		p
-	end
-	
-	plot(plots..., layout = (4,2), size = (600, 700))
-end
-
-# ╔═╡ 5538434d-b77e-4d77-9ca1-328ab1f423d3
-function plot_discrete_violin(data)
-	bimodal_data = data[data.condition .== "bimodal", :]
-	unimodal_data = data[data.condition .== "unimodal", :]
-	
-	
-	p = plot(
-		xlabel = "position of target adjective",
-		ylabel = "rating",
-	)
-	discrete_violin!(p, 
-		bimodal_data.order, bimodal_data.response,
-		position = :left,
-		label = "bimodal",
-	)
-	discrete_violin!(p, 
-		unimodal_data.order, unimodal_data.response,
-		position = :right,
-		label = "unimodal",
-	)
-	p
-end
-
-# ╔═╡ 89d741fd-04a3-4aa2-9105-ef7da99a8f29
-plot_discrete_violin(test_results)
-
-# ╔═╡ 2e8c9de6-e28b-4625-8bcc-94709528f466
-plot_discrete_violin(scalar_data)
-
-# ╔═╡ b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
-plot_discrete_violin(absolute_data)
-
 # ╔═╡ 7968aaf4-c8a3-4163-bf7a-0d8935c27229
 function aggregate_responses(data)
 	positions =  ["first", "second"]
@@ -423,13 +413,92 @@ plot_aggregated_responses(scalar_data)
 # ╔═╡ 05803aad-d182-4be8-9fe3-54aaa7ae919d
 plot_aggregated_responses(absolute_data)
 
+# ╔═╡ 664b1c27-2e2b-431e-8e07-ca43a7b12e8a
+function plot_stacked_bar(data; kwargs...)	
+	percentile(order, condition, rating) = let
+		subdata = filter(data) do row
+			row.condition == condition && row.order == order
+		end
+		responses = subdata.response
+		count(r -> r <= rating, responses) / length(responses)
+	end
+	
+	xticklabels =  ["bimodal\ntarget first", "unimodal\ntarget first", 
+		"bimodal\ntarget second", "unimodal\ntarget second"]
+	
+	p = plot(
+		xlabel = "condition + order",
+		ylabel = "fraction of responses",
+		legendtitle = "rating",
+		xticks = ([1,2,4,5], xticklabels),
+		xtickfontsize = 7
+	)
+	
+	orders = ["first", "second"]
+	conditions = ["bimodal", "unimodal"]
+	
+	for condition in conditions
+		pal = let
+			c1_index = condition == "bimodal" ? 1 : :2 
+			c1 = PlotThemes.wong_palette[c1_index]
+			palette(cgrad([:white, c1], 5, categorical = true))
+		end
+
+		for rating in reverse(scale)
+			bar_positions = [1,4] .+ (condition == "unimodal")
+			percentiles = map(o -> percentile(o, condition, rating), orders)
+
+			bar!(p,
+				bar_positions, 
+				percentiles,
+				palette = pal,
+				fillcolor = rating,
+				bar_width = 0.7,
+				label = rating,
+			)
+		end
+	end
+	
+	plot!(p; kwargs...)
+	
+	p
+end
+
+# ╔═╡ 89d741fd-04a3-4aa2-9105-ef7da99a8f29
+plot_stacked_bar(test_results)
+
+# ╔═╡ 2e8c9de6-e28b-4625-8bcc-94709528f466
+plot_stacked_bar(scalar_data)
+
+# ╔═╡ b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
+plot_stacked_bar(absolute_data)
+
+# ╔═╡ f99af668-ddae-414f-ad51-17c58f2d4b84
+let
+	combinations = (sort ∘ unique ∘ zip)(test_results.adj_target, test_results.adj_secondary)
+	
+	plots = map(combinations) do (target, secondary)
+		data = filter(test_results) do row
+			row.adj_target == target && row.adj_secondary == secondary
+		end
+		
+		plot_stacked_bar(data, 
+			title = "$(target) + $(secondary)",
+			legend = :none, xtickfontsize = :5, guidefontsize = 8)
+	end
+	
+	plot(plots..., layout = (4,2), size = (600, 700))
+end
+
 # ╔═╡ Cell order:
 # ╟─75ed3aeb-ca7c-4db8-82e9-7fdd7b394b97
 # ╠═53c045a8-7032-11eb-1e32-979e2d2b7846
+# ╠═a3e59e50-ee23-443a-a631-f2a25bc96f88
 # ╠═fb243fdd-76ce-4ea2-b38c-d3450e9b01b1
 # ╟─95263e12-80b6-4eeb-b36e-157e67a51850
 # ╠═7b942347-7e3c-413a-a800-59ca7f82d137
-# ╟─fd6e1104-3b34-49fa-9032-336fe42a0e8a
+# ╠═9ca85756-6c6c-4e45-ae6b-490d70070776
+# ╠═c1474675-5cfd-426c-8faa-8539d1f58c88
 # ╟─7ade9d08-b89d-477c-8ede-c3cdbf1d4cd3
 # ╠═9d94d22d-6ebf-4f26-a8ed-321ebb81c972
 # ╟─f38b95f7-b8c5-4b14-b305-d0f5b4639d2c
@@ -443,7 +512,7 @@ plot_aggregated_responses(absolute_data)
 # ╟─771607e6-dbbc-4883-9bad-cdd68e0d99a7
 # ╠═f8b4c2f0-3ed9-4225-a40d-62008ec51754
 # ╟─860e9c66-4268-4d09-b7ce-d3b8eca84537
-# ╟─89d741fd-04a3-4aa2-9105-ef7da99a8f29
+# ╠═89d741fd-04a3-4aa2-9105-ef7da99a8f29
 # ╟─38a7e895-aba0-4988-9ae9-b50571808a22
 # ╟─6083e4df-0a27-476f-83d8-7e9c6b21d351
 # ╠═57d977cc-d93f-42d6-bacb-c6f06c0b4c68
@@ -451,18 +520,21 @@ plot_aggregated_responses(absolute_data)
 # ╟─a602dc1f-5acb-4abb-a9b0-6937709e99c8
 # ╟─6dd07dbb-bd31-46c1-a5d0-f561c4ef1f87
 # ╠═404b5626-c603-4996-97df-f5b08b24930b
-# ╟─b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
+# ╠═b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
 # ╟─05803aad-d182-4be8-9fe3-54aaa7ae919d
 # ╟─586961f3-127b-424d-8599-9cb765054850
-# ╟─f99af668-ddae-414f-ad51-17c58f2d4b84
+# ╠═f99af668-ddae-414f-ad51-17c58f2d4b84
 # ╟─d02c1bd3-8cd8-47f4-804c-c08effaac0df
 # ╠═d4d8acb4-df67-4cc1-9daf-0fc0a46b5e06
 # ╠═043d1865-7a2d-4c3d-86de-e123eecfdf5f
+# ╠═f71a234a-f1b2-4266-8a0f-ce41d5b9869e
+# ╟─f6e38d97-a563-4825-a6e4-2a4413110a88
+# ╠═6537a221-1d99-473c-83c3-d9307126b05c
+# ╠═c19d6921-9744-4fa3-9ff7-db9c9b13cb50
 # ╟─215219a4-47a6-4c5f-b1e0-0c8c270ff3f3
 # ╠═2e9afc98-7e13-45e5-ba23-d0daa4d8afb2
 # ╠═7b2998f7-dc66-49b4-9d0d-71a7b357df38
 # ╠═43e082be-6457-4125-ab46-4c50d7a38bc2
-# ╠═5538434d-b77e-4d77-9ca1-328ab1f423d3
-# ╠═3c5c9818-33af-4cbe-921c-010f78a059bb
 # ╠═7968aaf4-c8a3-4163-bf7a-0d8935c27229
 # ╠═f6c3b498-ad94-4b0d-9e0d-07a4e8ca4f49
+# ╠═664b1c27-2e2b-431e-8e07-ca43a7b12e8a
