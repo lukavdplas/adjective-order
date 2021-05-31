@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ ab04a609-f17b-4360-ba3c-784bc89e192d
 begin
     import Pkg
-    Pkg.activate(".")
+    Pkg.activate("..")
 
     try
 		using CSV, DataFrames, Distributions

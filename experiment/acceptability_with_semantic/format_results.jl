@@ -8,9 +8,13 @@ using InteractiveUtils
 begin
     import Pkg
     Pkg.activate("../..")
-	Pkg.instantiate()
 
-    using CSV, DataFrames
+    try
+		using CSV, DataFrames
+	catch
+		Pkg.instantiate()
+		using CSV, DataFrames
+	end
 end
 
 # ╔═╡ 21c40f3f-f93f-403d-8d10-63d273e4d163
