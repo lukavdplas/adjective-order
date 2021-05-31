@@ -324,11 +324,18 @@ md"Define a plot function"
 
 # ╔═╡ 1d27ec93-5509-4dff-af1a-2eb7e183412a
 function plot_confidence_disagreement(results)
-	adjectives = intersect(["big", "long", "expensive"], unique(results.adj_target))
-	conditions = intersect(["bimodal", "unimodal"], unique(results.condition))
+	#get all adjective+condition cases that actually appear in the data
+	cases = let
+		groups = groupby(results, [:adj_target, :condition])
+		all_combinations = [
+			(first(data.adj_target), first(data.condition)) for data in groups
+		]
+		filter(all_combinations) do (adjective, condition)
+			!ismissing(adjective) && !ismissing(condition)
+		end
+	end
 	
-	cases = [(adj, cond) for adj in adjectives for cond in conditions]
-	
+	#disagreement for an adjective+condition case
 	disagreement(case) = let
 		adjective, condition = case
 		data = filter(results) do row
@@ -339,6 +346,7 @@ function plot_confidence_disagreement(results)
 		mean(disagreement_per_item(data).disagreement)
 	end
 	
+	#total observations for a case
 	total_observations(case) = let
 		adjective, condition = case
 		data = filter(results) do row
@@ -349,6 +357,7 @@ function plot_confidence_disagreement(results)
 		nrow(data)
 	end
 	
+	#sort cases by disagreement ratio for the plot
 	sorted_cases = sort(cases, by = disagreement)
 	disagreements = disagreement.(sorted_cases)
 	
@@ -398,31 +407,45 @@ plot_confidence_disagreement(all_results_exp3)
 # ╔═╡ c525c29a-8aff-497e-b8a3-50ea03073c5d
 md"### Export plots"
 
-# ╔═╡ c03f946c-4933-47b7-9c67-8a708deae41c
-plot_path = "../figures/"
+# ╔═╡ 2274e8b9-ef94-402b-a17d-5dcf6bd471ea
+root = ".."
+
+# ╔═╡ 2b93bb69-d6b4-43e4-80cb-9e8904b74dff
+function export_figure(plot, name)
+	if "figures" ∈ readdir(root)
+		plot_path = root * "/figures/"
+		savefig(
+			plot_disagreement(disagreement_results_exp2),
+			plot_path * "disagreement_results_exp2.pdf"
+		)
+		md"Figure saved! ✨"
+	else
+		md"No `figures` folder 😪"
+	end
+end
 
 # ╔═╡ 413acb58-81de-49bb-a00b-70b60a850dd9
-savefig(
+export_figure(
 	plot_disagreement(disagreement_results_exp2),
-	plot_path * "disagreement_results_exp2.pdf"
+	"disagreement_results_exp2.pdf"
 )
 
 # ╔═╡ 7b53bca9-ac63-47af-8457-d5f42b6b2b79
-savefig(
+export_figure(
 	plot_disagreement(disagreement_results_exp3),
-	plot_path * "disagreement_results_exp3.pdf"
+	"disagreement_results_exp3.pdf"
 )
 
 # ╔═╡ de9692b1-8ceb-4a37-86b0-1c94c228b9fb
-savefig(
+export_figure(
 	plot_confidence_disagreement(all_results_exp2),
-	plot_path * "confidence_disagreement_results_exp2.pdf"
+	"confidence_disagreement_results_exp2.pdf"
 )
 
 # ╔═╡ fe4773f1-4637-4557-a75b-dca60b0e3fc9
-savefig(
+export_figure(
 	plot_confidence_disagreement(all_results_exp3),
-	plot_path * "confidence_disagreement_results_exp3.pdf"
+	"confidence_disagreement_results_exp3.pdf"
 )
 
 # ╔═╡ 294da086-eddb-4268-a53a-3c20eaedcbfd
@@ -481,7 +504,8 @@ CSV.write("results/disagreement_exp3.csv", disagreement_results_exp3)
 # ╠═14201d40-f60b-447b-b317-6e08c463f4fd
 # ╠═212d8e6d-afee-44fe-a633-35e2423dfa44
 # ╟─c525c29a-8aff-497e-b8a3-50ea03073c5d
-# ╠═c03f946c-4933-47b7-9c67-8a708deae41c
+# ╠═2274e8b9-ef94-402b-a17d-5dcf6bd471ea
+# ╠═2b93bb69-d6b4-43e4-80cb-9e8904b74dff
 # ╠═413acb58-81de-49bb-a00b-70b60a850dd9
 # ╠═7b53bca9-ac63-47af-8457-d5f42b6b2b79
 # ╠═de9692b1-8ceb-4a37-86b0-1c94c228b9fb
