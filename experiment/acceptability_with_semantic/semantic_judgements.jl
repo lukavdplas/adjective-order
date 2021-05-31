@@ -8,9 +8,13 @@ using InteractiveUtils
 begin
     import Pkg
     Pkg.activate("../..")
-	Pkg.instantiate()
 
-    using CSV, DataFrames, Plots, PlotThemes, Statistics
+    try
+		
+	catch
+		Pkg.instantiate()
+		using CSV, DataFrames, Plots, Statistics
+	end
 
 	theme(:wong, legend=:outerright)
 end
