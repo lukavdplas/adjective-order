@@ -7,7 +7,7 @@ using InteractiveUtils
 # ╔═╡ e8edf6b8-c218-11eb-1fc4-7984a8fbd724
 begin
     import Pkg
-    Pkg.activate("..")
+    Pkg.activate("../..")
 
     try
 		using CSV, DataFrames, Plots
