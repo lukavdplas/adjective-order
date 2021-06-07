@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.5
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -51,17 +51,6 @@ md"""
 md"""
 ### Gender
 """
-
-# ╔═╡ fa7ba658-27ac-47a8-bbff-243515bd2c53
-function format_counts(data, item; name = missing)
-	item_data = filter(row -> row.id == item, data)
-	grouped = groupby(item_data, :response)
-	table = combine(grouped, nrow)
-	rename(table,
-		:response => name,
-		:nrow => "N"
-	)
-end
 
 # ╔═╡ 1ee0a1a6-4723-4e7c-80d8-717da6664749
 md"""
@@ -174,6 +163,19 @@ function is_native(participant)
 	response == "Yes"
 end
 
+# ╔═╡ fa7ba658-27ac-47a8-bbff-243515bd2c53
+function format_counts(data, item; name = missing)
+	item_data = filter(data) do row
+		row.id == item && is_native(row.participant)
+	end
+	grouped = groupby(item_data, :response)
+	table = combine(grouped, nrow)
+	rename(table,
+		:response => name,
+		:nrow => "N"
+	)
+end
+
 # ╔═╡ f00afc92-e90c-4879-aa88-9d934a8eef5d
 format_counts(results, "intro_native", name = "native")
 
@@ -203,7 +205,10 @@ let
 end
 
 # ╔═╡ 2a205bc0-702b-44ee-aaab-a3dd39f64a9b
-participants = unique(results.participant) ;
+participants = let
+	ids = unique(results.participant)
+	filter(is_native, ids)
+end
 
 # ╔═╡ 7bf19152-9f92-420f-9057-a954499179f3
 all(is_native.(participants))
@@ -383,7 +388,7 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╠═96e88f14-0332-4b2f-9ab3-c312679817ab
 # ╟─77ae2222-3b71-439e-80a4-b8b7f957332a
 # ╠═1936ac3b-861b-437e-bdc6-5dd4d94f48ce
-# ╠═66ac1377-aa46-4c10-85fe-63daeb68ab07
+# ╟─66ac1377-aa46-4c10-85fe-63daeb68ab07
 # ╠═86338e1a-46e3-428b-8bf5-0610e435a9a6
 # ╠═9cb8cc07-5159-4212-8339-0192b08a4b4e
 # ╠═06fe2b77-b932-46c7-a712-5dfe670c710a

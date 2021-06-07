@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -142,6 +142,9 @@ function score_consistency(data::AbstractDataFrame)
 	average_precision(responses, values)
 end
 
+# ╔═╡ 17f5e40a-2b4f-472c-8252-f02b98c5dfd5
+consistency_threshold = 0.8
+
 # ╔═╡ 49f49cf2-b8b2-44cb-9195-2c2752979257
 md"## Import"
 
@@ -253,6 +256,15 @@ histogram(
 	ylabel = "# observations",
 )
 
+# ╔═╡ d14fe426-7ee9-4c98-979b-65d8b7f218ed
+function semantic_consistency_score(participant)
+	scores = filter(consistency_scores) do row
+		row.participant == participant
+	end
+	
+	mean(scores.AP)
+end
+
 # ╔═╡ f3498682-38f2-484b-8ab2-29b2efc864ae
 function semantic_judgements(participant, adjective, scenario)
 	res = filter(results) do row
@@ -286,9 +298,17 @@ function include_participant(participant)
 	end
 	
 	all([
+			semantic_consistency_score(participant) >= consistency_threshold,
 			filler_score(participant) >= filler_threshold,
 			sd_response(participant) >= 1
-			])
+		])
+end
+
+# ╔═╡ 72c64a5f-1e62-4b6e-a185-1c964ca66c5b
+let
+	total = length(participants)
+	excluded = count(!include_participant, participants)
+	md"Participants excluded: $(excluded) out of $(total)"
 end
 
 # ╔═╡ 9cb8cc07-5159-4212-8339-0192b08a4b4e
@@ -332,10 +352,13 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╠═8f5a4372-fbd6-4aef-a337-6579e0c1e47f
 # ╠═ad88b5e2-1108-421c-b44d-951bd04fcd19
 # ╠═a0642a75-e450-442f-8d1a-d0bfdd94aede
+# ╠═d14fe426-7ee9-4c98-979b-65d8b7f218ed
+# ╠═17f5e40a-2b4f-472c-8252-f02b98c5dfd5
 # ╟─49f49cf2-b8b2-44cb-9195-2c2752979257
 # ╠═254b6cda-8c9c-11eb-1c41-353023a58eea
 # ╠═047ecfd6-37ca-4a1c-91a7-2638faaa2bb6
 # ╟─77ae2222-3b71-439e-80a4-b8b7f957332a
 # ╠═1936ac3b-861b-437e-bdc6-5dd4d94f48ce
+# ╟─72c64a5f-1e62-4b6e-a185-1c964ca66c5b
 # ╠═9cb8cc07-5159-4212-8339-0192b08a4b4e
 # ╠═06fe2b77-b932-46c7-a712-5dfe670c710a

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.3
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -196,7 +196,18 @@ Filter participants and save filtered results
 
 # ╔═╡ 1936ac3b-861b-437e-bdc6-5dd4d94f48ce
 function include_participant(participant)
-	filler_score(participant) >= filler_threshold
+	all([
+			filler_score(participant) >= filler_threshold,
+			sd_response(participant) >= 1
+		])
+end
+
+# ╔═╡ d0dcb068-f390-4f09-abd2-36d033464679
+let
+	excluded = count(!include_participant, participants)
+	md"""
+	Excluding $(excluded) out of $(length(participants)) participants.
+	"""
 end
 
 # ╔═╡ 9cb8cc07-5159-4212-8339-0192b08a4b4e
@@ -239,5 +250,6 @@ CSV.write("results/results_filtered.csv", filtered_results)
 # ╠═047ecfd6-37ca-4a1c-91a7-2638faaa2bb6
 # ╟─77ae2222-3b71-439e-80a4-b8b7f957332a
 # ╠═1936ac3b-861b-437e-bdc6-5dd4d94f48ce
+# ╟─d0dcb068-f390-4f09-abd2-36d033464679
 # ╠═9cb8cc07-5159-4212-8339-0192b08a4b4e
 # ╠═06fe2b77-b932-46c7-a712-5dfe670c710a
