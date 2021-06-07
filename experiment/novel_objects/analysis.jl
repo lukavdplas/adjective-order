@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.5
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -7,7 +7,8 @@ using InteractiveUtils
 # ╔═╡ 53c045a8-7032-11eb-1e32-979e2d2b7846
 begin
     import Pkg
-    Pkg.activate("../..")
+	root = "../.."
+    Pkg.activate(root)
 
     try
 		using DataFrames, CSV, Statistics, Plots
@@ -23,9 +24,6 @@ end
 md"""
 ## Import
 """
-
-# ╔═╡ a3e59e50-ee23-443a-a631-f2a25bc96f88
-figures_path = "../../figures/"
 
 # ╔═╡ fb243fdd-76ce-4ea2-b38c-d3450e9b01b1
 all_results =  CSV.read(
@@ -94,6 +92,7 @@ let
 	
 	histogram(
 		times,
+		bins = 41,
 		label = nothing
 	)
 end
@@ -176,6 +175,15 @@ end
 # ╔═╡ f6e38d97-a563-4825-a6e4-2a4413110a88
 md"Separated by order:"
 
+# ╔═╡ 13ba2161-87f6-493b-94e6-594dc72593c4
+md"## Export plots"
+
+# ╔═╡ a3e59e50-ee23-443a-a631-f2a25bc96f88
+figures_path = "../../figures/"
+
+# ╔═╡ aebc9f53-30be-4d5d-9e6f-393a03f5f7f8
+figures_folder_exists = isdir(figures_path)
+
 # ╔═╡ 215219a4-47a6-4c5f-b1e0-0c8c270ff3f3
 md"""
 ## General functions
@@ -183,6 +191,23 @@ md"""
 
 # ╔═╡ 2e9afc98-7e13-45e5-ba23-d0daa4d8afb2
 scale = 1:5
+
+# ╔═╡ 4c80ee3e-1394-4247-a3a2-eaf7e5e7bb15
+function get_colour(condition)
+	if condition == "bimodal"
+		1
+	elseif condition == "unimodal"
+		2
+	else
+		3
+	end
+end
+
+# ╔═╡ 79556aa4-c313-47f1-a552-b7e8daa700ab
+function get_palette(condition)
+	main_colour = PlotThemes.wong_palette[get_colour(condition)]
+	palette(cgrad([:white, main_colour], 5, categorical = true))
+end
 
 # ╔═╡ 9ca85756-6c6c-4e45-ae6b-490d70070776
 confidence_plot = let
@@ -211,12 +236,6 @@ confidence_plot = let
 	conditions = ["bimodal", "unimodal"]
 	
 	for condition in conditions
-		pal = let
-			c1_index = condition == "bimodal" ? 1 : :2 
-			c1 = PlotThemes.wong_palette[c1_index]
-			palette(cgrad([:white, c1], 5, categorical = true))
-		end
-
 		for rating in reverse(scale)
 			bar_positions = [1,4,7] .+ (condition == "unimodal")
 			percentiles = map(adj -> percentile(adj, condition, rating), adjectives)
@@ -224,7 +243,7 @@ confidence_plot = let
 			bar!(p,
 				bar_positions, 
 				percentiles,
-				palette = pal,
+				palette = get_palette(condition),
 				fillcolor = rating,
 				bar_width = 0.7,
 				label = rating,
@@ -235,11 +254,13 @@ confidence_plot = let
 	p
 end
 
-# ╔═╡ c1474675-5cfd-426c-8faa-8539d1f58c88
-savefig(confidence_plot, figures_path * "confidence_ratings_exp3.pdf")
+# ╔═╡ 99c339b2-6630-4c61-a601-35a550fd4ccb
+if figures_folder_exists
+	savefig(confidence_plot, figures_path * "confidence_ratings_exp3.pdf")
+end
 
 # ╔═╡ c19d6921-9744-4fa3-9ff7-db9c9b13cb50
-function plot_acceptability_by_confidence(data; condition = :none, kwargs...)
+function plot_acceptability_by_confidence(data; condition = nothing, kwargs...)
 	percentile(confidence, acceptability) = let
 		subdata = filter(data) do row
 			row.confidence_on_semantic == confidence
@@ -254,18 +275,6 @@ function plot_acceptability_by_confidence(data; condition = :none, kwargs...)
 		legendtitle = "acceptability",
 		xticks = scale
 	)
-	
-	pal = let
-		c1_index = if condition == :bimodal
-			1
-		elseif condition == :unimodal
-			2
-		else
-			3
-		end 
-		c1 = PlotThemes.wong_palette[c1_index]
-		palette(cgrad([:white, c1], 5, categorical = true))
-	end
 
 	for rating in reverse(scale)
 		percentiles = map(c -> percentile(c, rating), scale)
@@ -273,7 +282,7 @@ function plot_acceptability_by_confidence(data; condition = :none, kwargs...)
 		bar!(p,
 			scale, 
 			percentiles,
-			palette = pal,
+			palette = get_palette(condition),
 			fillcolor = rating,
 			label = rating,
 		)
@@ -298,16 +307,11 @@ let
 	plot(p1, p2, layout = (2,1))
 end
 
-# ╔═╡ 7b2998f7-dc66-49b4-9d0d-71a7b357df38
-function response_counts(responses)
-	map(scale) do score
-		count(responses .== score)
-	end
-end
-
 # ╔═╡ 43e082be-6457-4125-ab46-4c50d7a38bc2
 function plot_response_counts(responses; kwargs...)
-	counts = response_counts(responses)
+	counts = map(scale) do score
+		count(responses .== score)
+	end
 	p = bar(scale, counts, 
 		label = nothing, xlabel = "response", ylabel = "frequency";
 		kwargs...
@@ -323,6 +327,10 @@ plot_response_counts(test_results[:, "response"])
 
 # ╔═╡ 5b05f3d8-c9d7-4a75-a7ac-32e34199cc88
 let
+	response_counts(responses) = map(scale) do score
+		count(responses .== score)
+	end
+	
 	responses(acceptability) = filler_results[
 		filler_results.filler_acceptability .== acceptability,
 		"response"]
@@ -438,11 +446,6 @@ function plot_stacked_bar(data; kwargs...)
 	conditions = ["bimodal", "unimodal"]
 	
 	for condition in conditions
-		pal = let
-			c1_index = condition == "bimodal" ? 1 : :2 
-			c1 = PlotThemes.wong_palette[c1_index]
-			palette(cgrad([:white, c1], 5, categorical = true))
-		end
 
 		for rating in reverse(scale)
 			bar_positions = [1,4] .+ (condition == "unimodal")
@@ -451,7 +454,7 @@ function plot_stacked_bar(data; kwargs...)
 			bar!(p,
 				bar_positions, 
 				percentiles,
-				palette = pal,
+				palette = get_palette(condition),
 				fillcolor = rating,
 				bar_width = 0.7,
 				label = rating,
@@ -490,15 +493,20 @@ let
 	plot(plots..., layout = (4,2), size = (600, 700))
 end
 
+# ╔═╡ c1474675-5cfd-426c-8faa-8539d1f58c88
+if figures_folder_exists
+	savefig(plot_stacked_bar(test_results),
+		figures_path * "acceptability_results_exp3.pdf"
+	)
+end
+
 # ╔═╡ Cell order:
 # ╟─75ed3aeb-ca7c-4db8-82e9-7fdd7b394b97
 # ╠═53c045a8-7032-11eb-1e32-979e2d2b7846
-# ╠═a3e59e50-ee23-443a-a631-f2a25bc96f88
 # ╠═fb243fdd-76ce-4ea2-b38c-d3450e9b01b1
 # ╟─95263e12-80b6-4eeb-b36e-157e67a51850
 # ╠═7b942347-7e3c-413a-a800-59ca7f82d137
 # ╠═9ca85756-6c6c-4e45-ae6b-490d70070776
-# ╠═c1474675-5cfd-426c-8faa-8539d1f58c88
 # ╟─7ade9d08-b89d-477c-8ede-c3cdbf1d4cd3
 # ╠═9d94d22d-6ebf-4f26-a8ed-321ebb81c972
 # ╟─f38b95f7-b8c5-4b14-b305-d0f5b4639d2c
@@ -531,9 +539,15 @@ end
 # ╟─f6e38d97-a563-4825-a6e4-2a4413110a88
 # ╠═6537a221-1d99-473c-83c3-d9307126b05c
 # ╠═c19d6921-9744-4fa3-9ff7-db9c9b13cb50
+# ╟─13ba2161-87f6-493b-94e6-594dc72593c4
+# ╠═a3e59e50-ee23-443a-a631-f2a25bc96f88
+# ╠═aebc9f53-30be-4d5d-9e6f-393a03f5f7f8
+# ╠═99c339b2-6630-4c61-a601-35a550fd4ccb
+# ╠═c1474675-5cfd-426c-8faa-8539d1f58c88
 # ╟─215219a4-47a6-4c5f-b1e0-0c8c270ff3f3
 # ╠═2e9afc98-7e13-45e5-ba23-d0daa4d8afb2
-# ╠═7b2998f7-dc66-49b4-9d0d-71a7b357df38
+# ╠═4c80ee3e-1394-4247-a3a2-eaf7e5e7bb15
+# ╠═79556aa4-c313-47f1-a552-b7e8daa700ab
 # ╠═43e082be-6457-4125-ab46-4c50d7a38bc2
 # ╠═7968aaf4-c8a3-4163-bf7a-0d8935c27229
 # ╠═f6c3b498-ad94-4b0d-9e0d-07a4e8ca4f49

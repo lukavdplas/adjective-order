@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.5
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -7,7 +7,8 @@ using InteractiveUtils
 # ╔═╡ 0c33a28a-2419-452c-bb7f-62e0b068418a
 begin
     import Pkg
-    Pkg.activate("../..")
+	root = "../.."
+    Pkg.activate(root)
 
 	try
 		using CSV, DataFrames, Plots, Statistics
@@ -44,7 +45,9 @@ semantic_results = results[results.item_type .== "semantic", :]
 md"""
 ## Filter data
 
-Function for filterting data further. Only include the data for a participant/adjective/scenario combination if the participant's responses were monotonous. That is, if they selected an item as "big", they must also have selected all larger items as well.
+Function for filterting data further. This is needed when I calculate the threshold value for each participant.
+
+Only include the data for a participant/adjective/scenario combination if the participant's responses were monotonous. That is, if they selected an item as "big", they must also have selected all larger items as well.
 
 My definition is loose on items of equal size because that makes the calculation easier. This is also not as important.
 """
@@ -70,41 +73,8 @@ function get_bounds(adjective, scenario)
 	elseif adjective == "long"
 		return (0, 40)
 	else #so adjective == "expensive" must be true
-		return (0, 20)
+		return (0, 22)
 	end
-end
-
-# ╔═╡ 5fb90c52-f4eb-40be-81b7-2f86019f2e9c
-md"""
-## Threshold estimation
-
-Estimate the location of the threshold for each participant. 
-
-In the example of *"big"*, I base the threshold value for a participant on the lowest measure in the sample that they classified as *"big"*. The threshold is the midpoint between that value and the next one below it.
-"""
-
-# ╔═╡ 57070425-5937-466e-b540-2ead9d2a6199
-function estimate_threshold(responses, measures)
-	responses = parse.(Bool, responses)
-	judgements = (collect ∘ zip)(responses, measures)
-	
-	selected = filter(judgements) do (response, measure)
-		response
-	end
-	
-	lowest_selected = minimum(selected) do (response, measure)
-		measure
-	end
-	
-	under_threshold = filter(judgements) do (response, measure)
-		measure < lowest_selected
-	end
-	
-	highest_under_threshold = maximum(under_threshold) do (response, measure)
-		measure
-	end
-	
-	threshold = mean([lowest_selected, highest_under_threshold])
 end
 
 # ╔═╡ 820a79b9-b295-43aa-8bd0-cce8d8ba76ba
@@ -179,6 +149,12 @@ md"""
 ### Export plots
 """
 
+# ╔═╡ e4a7961e-5f32-4e6c-be46-264520ccd421
+md"**Histograms**"
+
+# ╔═╡ b551c9be-6a03-4a09-8e88-cf620f47e36b
+md"**Selection probabilities**"
+
 # ╔═╡ a3a9b479-cb0b-49e3-a710-0a0b13c1312d
 md"""
 ## General functions
@@ -215,29 +191,25 @@ filtered_results = let
 	combine(filtered, names(filtered), keepkeys = true)
 end
 
-# ╔═╡ 653a596d-ada1-4901-a999-70f827a4766f
-function threshold(adjectives, responses, sizes, prices)
-	scale = (get_scale ∘ first)(adjectives)
-	
-	measures = scale == "price" ? prices : sizes
-	
-	estimate_threshold(responses, measures)
-end
-
-# ╔═╡ 4d9f6cf7-9c45-44b5-a7fa-90f5b49004fc
-threshold_results = combine(
-	groupby(semantic_results, [:adj_target, :scenario, :condition, :participant]),
-	[:adj_target, :response, :stimulus_size, :stimulus_price] => threshold => "threshold"
-)
-
 # ╔═╡ 5a7e5a60-29f9-414e-bada-f7787ba61b18
-scale_label(scale) = scale == "size" ? "size (inches)" : "price (\$)"
+scale_label(scale) = scale == "size" ? "size (cm)" : "price (\$)"
+
+# ╔═╡ e4189dd6-725e-4153-a6ca-5af9391d57c9
+function get_colour(condition)
+	if condition == "bimodal"
+		1
+	elseif condition == "unimodal"
+		2
+	else
+		3
+	end
+end
 
 # ╔═╡ 8842788c-177d-418a-9578-3ee5e0466c39
 function plot_selection_results(adjective, scenario, condition = nothing; kwargs...)
 	scale = get_scale(adjective)
 	
-	data = filter(filtered_results) do row
+	data = filter(semantic_results) do row
 		all([
 			row.adj_target == adjective,
 			row.scenario == scenario,
@@ -258,12 +230,13 @@ function plot_selection_results(adjective, scenario, condition = nothing; kwargs
 	end
 	
 	bounds = get_bounds(adjective, scenario)
-	
+
 	plot(
 		[measures; bounds[2]], 
-		[probabilities; 1],
+		[probabilities; probabilities[end]],
 		linetype = :steppost,
-		fill = 0, linecolor = :black,
+		fill = 0, 
+		linecolor = :black, fillcolor = get_colour(condition),
 		ylims = (0,1), 
 		xlims = bounds,
 		label = nothing,
@@ -273,52 +246,15 @@ function plot_selection_results(adjective, scenario, condition = nothing; kwargs
 	)
 end
 
-# ╔═╡ 83e46121-1ced-4dd2-b733-3d9966fec148
-function plot_thresholds(adjective, scenario, condition = nothing; kwargs...)
-	scale = get_scale(adjective)
-	
-	subdata = filter(threshold_results) do row
-		all([
-				row.adj_target == adjective, 
-				row.scenario == scenario,
-				isnothing(condition) || (row.condition == condition)
-				])
-	end
-	
-	thresholds = subdata.threshold
-	
-	measures = let
-		data = filter(stimuli_data) do row
-			all([
-				row.scenario == scenario,
-				isnothing(condition) || (row[condition])
-				])
-		end
-
-		measures = data[:, scale]
-		(sort ∘ unique)(measures)
-	end
-	
-	histogram(thresholds,
-		bins = measures,
-		#normalize = true,
-		fill = 0,
-		xlims = get_bounds(adjective, scenario),
-		label = nothing,
-		ylabel = "N(threshold | $(scale))",
-		xlabel = scale_label(scale);
-		kwargs...
-	)
-end
-
 # ╔═╡ 17913ee9-5b69-425d-9ab0-fee4a29e4832
-function plot_sample_histogram(adjective, scenario, condition = "bimodal"; kwargs...)
+function plot_sample_histogram(adjective, scenario, condition = nothing; kwargs...)
 	scale = get_scale(adjective)
 	
 	data = filter(stimuli_data) do row
+		conditioncol = isnothing(condition) ? "bimodal" : condition
 		all([
 			row.scenario == scenario,
-			(row[condition] == true),
+			(row[conditioncol] == true),
 			])
 	end
 	
@@ -337,7 +273,7 @@ function plot_sample_histogram(adjective, scenario, condition = "bimodal"; kwarg
 	histogram(measures,
 		bins = nbins,
 		color = 2,
-		fill = 0,
+		fill = 0, fillcolor = get_colour(condition),
 		label = nothing;
 		xlabel = scale_label(scale),
 		ylabel = "N($(scale))",
@@ -349,7 +285,6 @@ end
 # ╔═╡ 8e27b617-b904-4eef-86a3-38560e7bac73
 plot(
 	plot_selection_results("expensive", "ball"),
-	#plot_thresholds("expensive", "ball"),
 	plot_sample_histogram("expensive", "ball"),
 	layout = (2,1)
 )
@@ -359,8 +294,6 @@ let
 	plot(
 		plot_selection_results("big", "ball", "unimodal", title = "unimodal"),
 		plot_selection_results("big", "ball", "bimodal", title = "bimodal"),
-		#plot_thresholds("big", "ball", "unimodal", title = " unimodal"),
-		#plot_thresholds("big", "ball", "bimodal", title = "bimodal"),
 		plot_sample_histogram("big", "ball", "unimodal"),
 		plot_sample_histogram("big", "ball", "bimodal"),
 		layout = (2,2))
@@ -369,7 +302,6 @@ end
 # ╔═╡ aa2655d1-2c8b-443a-9439-e636498f125e
 plot(
 	plot_selection_results("expensive", "spring"),
-	#plot_thresholds("expensive", "spring"),
 	plot_sample_histogram("expensive", "spring"),
 	layout = (2,1)
 )
@@ -379,24 +311,70 @@ let
 	plot(
 		plot_selection_results("long", "spring", "unimodal", title = "unimodal"),
 		plot_selection_results("long", "spring", "bimodal", title = "bimodal"),
-		#plot_thresholds("long", "spring", "unimodal", title = "unimodal"),
-		#plot_thresholds("long", "spring", "bimodal", title = " bimodal"),
 		plot_sample_histogram("long", "spring", "unimodal"),
 		plot_sample_histogram("long", "spring", "bimodal"),
-		layout = (2,2))
+		layout =  (2,2)
+	)
 end
 
 # ╔═╡ 8d7f53ad-2f6c-494c-a3a8-f71afd9a625b
-for scenario in ["ball", "spring"]
-	adj_target = scenario == "ball" ? "big" : "long"
-	for adjective in [adj_target, "expensive"]
+if "figures" ∈ readdir(root)
+	for scenario in ["ball", "spring"]
+		#long/big
+		adj_target = scenario == "ball" ? "big" : "long"
 		for condition in ["bimodal", "unimodal"]
-			p = plot_sample_histogram(adjective, scenario, condition)
-			scale = get_scale(adjective)
-			path = "../../figures/stimuli_histogram_$(scenario)_$(scale)_$(condition).pdf"
+			p = plot_sample_histogram(adj_target, scenario, condition)
+			scale = get_scale(adj_target)
+			path = root * "/figures/stimuli_histogram_$(scenario)_$(scale)_$(condition).pdf"
 			savefig(p, path)
 		end
+		
+		#expensive
+		adjective = "expensive"
+		p = plot_sample_histogram(adjective, scenario)
+		scale = get_scale(adjective)
+		path = root * "/figures/stimuli_histogram_$(scenario)_$(scale).pdf"
+		savefig(p, path)
 	end
+	
+	md"Histograms saved!"
+else
+	md"No figures folder"
+end
+
+# ╔═╡ d0a2d22f-92f7-411f-89bf-ad8fb8892bc8
+if "figures" ∈ readdir(root)
+	for scenario in ["ball", "spring"]
+		#big/long
+		adjective = scenario == "ball" ? "big" : "long"
+		for condition in ["bimodal", "unimodal"]
+			p = plot(
+				plot_selection_results(adjective, scenario, condition),
+				plot_sample_histogram(adjective, scenario, condition),
+				layout = grid(2,1, heights=[0.75, 0.25]),
+				size = (400, 400)
+			)
+			scale = get_scale(adjective)
+			path = root * "/figures/semantic_results_$(scenario)_$(scale)_$(condition).pdf"
+			savefig(p, path)
+		end
+		
+		#expensive
+		adjective = "expensive"
+		p = plot(
+			plot_selection_results(adjective, scenario),
+			plot_sample_histogram(adjective, scenario),
+			layout = grid(2,1, heights=[0.75, 0.25]),
+			size = (400, 400)
+		)
+		scale = get_scale(adjective)
+		path = root * "/figures/semantic_results_$(scenario)_$(scale).pdf"
+		savefig(p, path)			
+	end
+
+	md"Semantic results saved!"
+else
+	md"No figures folder"
 end
 
 # ╔═╡ Cell order:
@@ -413,11 +391,6 @@ end
 # ╟─c9718d2e-21e9-4379-8ce7-0c0d6a97ca2f
 # ╠═21bd0056-f2f3-4a25-9919-2a30a59a73bc
 # ╠═8842788c-177d-418a-9578-3ee5e0466c39
-# ╟─5fb90c52-f4eb-40be-81b7-2f86019f2e9c
-# ╠═57070425-5937-466e-b540-2ead9d2a6199
-# ╠═653a596d-ada1-4901-a999-70f827a4766f
-# ╠═4d9f6cf7-9c45-44b5-a7fa-90f5b49004fc
-# ╠═83e46121-1ced-4dd2-b733-3d9966fec148
 # ╟─820a79b9-b295-43aa-8bd0-cce8d8ba76ba
 # ╠═c6b20706-0115-4602-98ee-d7e22e986fec
 # ╠═93c41a8a-d25c-4efa-b860-adcee8cc9c89
@@ -433,7 +406,11 @@ end
 # ╟─28b5e4c2-62c0-482d-91bc-14e85c6bc100
 # ╠═afc58be4-6e79-424a-bfb7-0d94ec4e5130
 # ╟─4913f741-6f04-4bf8-8844-cc0a42a6d08b
+# ╟─e4a7961e-5f32-4e6c-be46-264520ccd421
 # ╠═8d7f53ad-2f6c-494c-a3a8-f71afd9a625b
+# ╟─b551c9be-6a03-4a09-8e88-cf620f47e36b
+# ╠═d0a2d22f-92f7-411f-89bf-ad8fb8892bc8
 # ╟─a3a9b479-cb0b-49e3-a710-0a0b13c1312d
 # ╠═9262a9cc-3edc-46e8-b47b-c643467a990f
 # ╠═5a7e5a60-29f9-414e-bada-f7787ba61b18
+# ╠═e4189dd6-725e-4153-a6ca-5af9391d57c9

@@ -248,7 +248,7 @@ A plot for people who like suffering
 """
 
 # ╔═╡ da398007-ac54-452e-9f13-eef5df399fb9
-function plot_too_many_things(data)	
+function plot_by_order_disagreement_condition(data)	
 	#select data
 	plotdata = filter(data) do row
 		row.item_type == "test"
@@ -302,19 +302,19 @@ end
 # ╔═╡ 6f3ba989-960e-4c18-a55f-8ddb17916587
 let
 	exp23_data = filter(row -> row.experiment ∈ [2,3], all_results)
-	plot_too_many_things(exp23_data)
+	plot_by_order_disagreement_condition(exp23_data)
 end
 
 # ╔═╡ dfaeb6bb-adb0-471c-9b20-3113f366ac23
 let
 	exp2_data = filter(row -> row.experiment == 2, all_results)
-	plot_too_many_things(exp2_data)
+	plot_by_order_disagreement_condition(exp2_data)
 end
 
 # ╔═╡ 7bbc24ed-f485-4c79-be7e-9c4734dede9b
 let
 	exp3_data = filter(row -> row.experiment == 3, all_results)
-	plot_too_many_things(exp3_data)
+	plot_by_order_disagreement_condition(exp3_data)
 end
 
 # ╔═╡ Cell order:
