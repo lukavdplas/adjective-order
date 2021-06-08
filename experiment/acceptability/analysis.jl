@@ -94,7 +94,7 @@ Also compare between the bimodal condition (where the target adjective is expect
 
 # ╔═╡ 6083e4df-0a27-476f-83d8-7e9c6b21d351
 md"""
-**Scalar-scalar combinations**
+**Scalar-target combinations**
 
 Only compare "long expensive", "big expensive", "long cheap", "big cheap"
 """
@@ -104,13 +104,8 @@ scalar_data = test_results[test_results.adj_secondary_type .== "scalar", :] ;
 
 # ╔═╡ 6dd07dbb-bd31-46c1-a5d0-f561c4ef1f87
 md"""
-**Absolute-scalar combinations**
-
-Compare "big refurbished", "long leather"
+**Absolute-target vs scalar-target combinations**
 """
-
-# ╔═╡ 404b5626-c603-4996-97df-f5b08b24930b
-absolute_data = test_results[test_results.adj_secondary_type .== "absolute", :] ;
 
 # ╔═╡ 586961f3-127b-424d-8599-9cb765054850
 md"**Results per adjective combination**"
@@ -268,9 +263,6 @@ plot_aggregated_responses(test_results)
 # ╔═╡ a602dc1f-5acb-4abb-a9b0-6937709e99c8
 plot_aggregated_responses(scalar_data)
 
-# ╔═╡ 05803aad-d182-4be8-9fe3-54aaa7ae919d
-plot_aggregated_responses(absolute_data)
-
 # ╔═╡ 7497a68f-0507-4205-93ec-f15753e13144
 function plot_stacked_bar(data; kwargs...)	
 	percentile(order, condition, rating) = let
@@ -323,9 +315,6 @@ plot_stacked_bar(test_results)
 # ╔═╡ 2e8c9de6-e28b-4625-8bcc-94709528f466
 plot_stacked_bar(scalar_data)
 
-# ╔═╡ b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
-plot_stacked_bar(absolute_data)
-
 # ╔═╡ f99af668-ddae-414f-ad51-17c58f2d4b84
 let
 	combinations = (sort ∘ unique ∘ zip)(test_results.adj_target, test_results.adj_secondary)
@@ -347,6 +336,65 @@ end
 if figures_folder_exists
 	savefig(plot_stacked_bar(test_results),
 		figures_path * "acceptability_results_exp1.pdf"
+	)
+end
+
+# ╔═╡ 77c6bc18-a9c2-47c8-b805-8005aacf9382
+function plot_scalar_vs_absolute(data)
+	percentile(order, secondary_type, rating) = let
+		subdata = filter(data) do row
+			row.adj_secondary_type == secondary_type && row.order == order
+		end
+		responses = subdata.response
+		count(r -> r <= rating, responses) / length(responses)
+	end
+	
+	xticklabels =  ["scalar\ntarget first", "absolute\ntarget first", 
+		"scalar\ntarget second", "absolute\ntarget second"]
+	
+	p = plot(
+		xlabel = "type of secondary adjective + order",
+		ylabel = "fraction of responses",
+		legendtitle = "rating",
+		xticks = ([1,2,4,5], xticklabels),
+		xtickfontsize = 7
+	)
+	
+	orders = ["first", "second"]
+	secondary_types = ["scalar", "absolute"]
+	
+	get_colour(secondary_type) = secondary_type == "scalar" ? 3 : 7
+	get_palette(secondary_type) = let
+		main_colour = PlotThemes.wong_palette[get_colour(secondary_type)]
+		palette(cgrad([:white, main_colour], 5, categorical = true))
+	end
+	
+	for secondary_type in secondary_types
+		for rating in reverse(scale)
+			bar_positions = [1,4] .+ (secondary_type == "absolute")
+			percentiles = map(o -> percentile(o, secondary_type, rating), orders)
+
+			bar!(p,
+				bar_positions, 
+				percentiles,
+				palette = get_palette(secondary_type),
+				fillcolor = rating,
+				bar_width = 0.7,
+				label = rating,
+			)
+		end
+	end
+	
+	p
+end
+
+# ╔═╡ f1c00a61-941e-4fcf-973f-47862f4449b5
+plot_scalar_vs_absolute(test_results)
+
+# ╔═╡ 09de33d0-80e6-42eb-907c-12ca6320ec5e
+if figures_folder_exists
+	savefig(plot_scalar_vs_absolute(test_results),
+		figures_path * "acceptability_scalar_vs_absolute_exp1.pdf"
 	)
 end
 
@@ -374,15 +422,14 @@ end
 # ╠═2e8c9de6-e28b-4625-8bcc-94709528f466
 # ╟─a602dc1f-5acb-4abb-a9b0-6937709e99c8
 # ╟─6dd07dbb-bd31-46c1-a5d0-f561c4ef1f87
-# ╠═404b5626-c603-4996-97df-f5b08b24930b
-# ╟─b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
-# ╟─05803aad-d182-4be8-9fe3-54aaa7ae919d
+# ╠═f1c00a61-941e-4fcf-973f-47862f4449b5
 # ╟─586961f3-127b-424d-8599-9cb765054850
 # ╟─f99af668-ddae-414f-ad51-17c58f2d4b84
 # ╟─af50efcf-7b5a-4dae-a63a-db0a278da71f
 # ╠═73ab583d-82ee-41f1-b75e-850b7408e684
 # ╠═4633f3ab-b47c-4866-9d2b-b7c1980f38c7
 # ╠═45579c4f-7112-406a-aefd-7be8a2147071
+# ╠═09de33d0-80e6-42eb-907c-12ca6320ec5e
 # ╟─215219a4-47a6-4c5f-b1e0-0c8c270ff3f3
 # ╠═2e9afc98-7e13-45e5-ba23-d0daa4d8afb2
 # ╠═efdaaa7c-ea15-4c1e-9d52-34c5b7a9c714
@@ -392,3 +439,4 @@ end
 # ╠═7968aaf4-c8a3-4163-bf7a-0d8935c27229
 # ╠═f6c3b498-ad94-4b0d-9e0d-07a4e8ca4f49
 # ╠═7497a68f-0507-4205-93ec-f15753e13144
+# ╠═77c6bc18-a9c2-47c8-b805-8005aacf9382
