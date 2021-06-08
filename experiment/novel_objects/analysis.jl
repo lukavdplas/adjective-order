@@ -121,13 +121,8 @@ scalar_data = test_results[test_results.adj_secondary_type .== "scalar", :] ;
 
 # ╔═╡ 6dd07dbb-bd31-46c1-a5d0-f561c4ef1f87
 md"""
-**Absolute-scalar combinations**
-
-Compare "big refurbished", "long leather"
+**Absolute vs scalar combinations**
 """
-
-# ╔═╡ 404b5626-c603-4996-97df-f5b08b24930b
-absolute_data = test_results[test_results.adj_secondary_type .== "absolute", :] ;
 
 # ╔═╡ 586961f3-127b-424d-8599-9cb765054850
 md"**Results per adjective combination**"
@@ -418,9 +413,6 @@ plot_aggregated_responses(test_results)
 # ╔═╡ a602dc1f-5acb-4abb-a9b0-6937709e99c8
 plot_aggregated_responses(scalar_data)
 
-# ╔═╡ 05803aad-d182-4be8-9fe3-54aaa7ae919d
-plot_aggregated_responses(absolute_data)
-
 # ╔═╡ 664b1c27-2e2b-431e-8e07-ca43a7b12e8a
 function plot_stacked_bar(data; kwargs...)	
 	percentile(order, condition, rating) = let
@@ -473,9 +465,6 @@ plot_stacked_bar(test_results)
 # ╔═╡ 2e8c9de6-e28b-4625-8bcc-94709528f466
 plot_stacked_bar(scalar_data)
 
-# ╔═╡ b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
-plot_stacked_bar(absolute_data)
-
 # ╔═╡ f99af668-ddae-414f-ad51-17c58f2d4b84
 let
 	combinations = (sort ∘ unique ∘ zip)(test_results.adj_target, test_results.adj_secondary)
@@ -497,6 +486,65 @@ end
 if figures_folder_exists
 	savefig(plot_stacked_bar(test_results),
 		figures_path * "acceptability_results_exp3.pdf"
+	)
+end
+
+# ╔═╡ c1d54af8-e4de-4a51-88dc-e23adae097a4
+function plot_scalar_vs_absolute(data)
+	percentile(order, secondary_type, rating) = let
+		subdata = filter(data) do row
+			row.adj_secondary_type == secondary_type && row.order == order
+		end
+		responses = subdata.response
+		count(r -> r <= rating, responses) / length(responses)
+	end
+	
+	xticklabels =  ["scalar\ntarget first", "absolute\ntarget first", 
+		"scalar\ntarget second", "absolute\ntarget second"]
+	
+	p = plot(
+		xlabel = "type of secondary adjective + order",
+		ylabel = "fraction of responses",
+		legendtitle = "rating",
+		xticks = ([1,2,4,5], xticklabels),
+		xtickfontsize = 7
+	)
+	
+	orders = ["first", "second"]
+	secondary_types = ["scalar", "absolute"]
+	
+	get_colour(secondary_type) = secondary_type == "scalar" ? 3 : 7
+	get_palette(secondary_type) = let
+		main_colour = PlotThemes.wong_palette[get_colour(secondary_type)]
+		palette(cgrad([:white, main_colour], 5, categorical = true))
+	end
+	
+	for secondary_type in secondary_types
+		for rating in reverse(scale)
+			bar_positions = [1,4] .+ (secondary_type == "absolute")
+			percentiles = map(o -> percentile(o, secondary_type, rating), orders)
+
+			bar!(p,
+				bar_positions, 
+				percentiles,
+				palette = get_palette(secondary_type),
+				fillcolor = rating,
+				bar_width = 0.7,
+				label = rating,
+			)
+		end
+	end
+	
+	p
+end
+
+# ╔═╡ b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
+plot_scalar_vs_absolute(test_results)
+
+# ╔═╡ b11b3c31-9882-4608-ab15-9d40df47eb7f
+if figures_folder_exists
+	savefig(plot_scalar_vs_absolute(test_results),
+		figures_path * "acceptability_scalar_vs_absolute_exp3.pdf"
 	)
 end
 
@@ -527,9 +575,7 @@ end
 # ╠═2e8c9de6-e28b-4625-8bcc-94709528f466
 # ╟─a602dc1f-5acb-4abb-a9b0-6937709e99c8
 # ╟─6dd07dbb-bd31-46c1-a5d0-f561c4ef1f87
-# ╠═404b5626-c603-4996-97df-f5b08b24930b
 # ╠═b2a7f59c-fe1a-4419-a2c9-9b6d57e0d029
-# ╟─05803aad-d182-4be8-9fe3-54aaa7ae919d
 # ╟─586961f3-127b-424d-8599-9cb765054850
 # ╠═f99af668-ddae-414f-ad51-17c58f2d4b84
 # ╟─d02c1bd3-8cd8-47f4-804c-c08effaac0df
@@ -544,6 +590,7 @@ end
 # ╠═aebc9f53-30be-4d5d-9e6f-393a03f5f7f8
 # ╠═99c339b2-6630-4c61-a601-35a550fd4ccb
 # ╠═c1474675-5cfd-426c-8faa-8539d1f58c88
+# ╠═b11b3c31-9882-4608-ab15-9d40df47eb7f
 # ╟─215219a4-47a6-4c5f-b1e0-0c8c270ff3f3
 # ╠═2e9afc98-7e13-45e5-ba23-d0daa4d8afb2
 # ╠═4c80ee3e-1394-4247-a3a2-eaf7e5e7bb15
@@ -552,3 +599,4 @@ end
 # ╠═7968aaf4-c8a3-4163-bf7a-0d8935c27229
 # ╠═f6c3b498-ad94-4b0d-9e0d-07a4e8ca4f49
 # ╠═664b1c27-2e2b-431e-8e07-ca43a7b12e8a
+# ╠═c1d54af8-e4de-4a51-88dc-e23adae097a4
