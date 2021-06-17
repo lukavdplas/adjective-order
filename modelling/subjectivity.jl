@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.5
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -404,6 +404,27 @@ plot_confidence_disagreement(all_results_exp2)
 # ╔═╡ 212d8e6d-afee-44fe-a633-35e2423dfa44
 plot_confidence_disagreement(all_results_exp3)
 
+# ╔═╡ ac1252de-a403-4ffd-ae3f-553d36fd9c68
+let
+	# dirty way to get a merged plot: add "_expX" to the target adjective
+	# so disagreement gets calculated per experiment
+	
+	add_exp_tag(data, experiment_tag) = let
+		newdata = copy(data)
+		newdata.adj_target = map(newdata.adj_target) do adjective
+			adjective * experiment_tag
+		end
+		newdata
+	end
+	
+	all_results = [
+		add_exp_tag(all_results_exp2, "_exp2") ; 
+		add_exp_tag(all_results_exp3, "_exp3")
+	]
+	
+	plot_confidence_disagreement(all_results)
+end
+
 # ╔═╡ c525c29a-8aff-497e-b8a3-50ea03073c5d
 md"### Export plots"
 
@@ -503,6 +524,7 @@ CSV.write("results/disagreement_exp3.csv", disagreement_results_exp3)
 # ╠═1d27ec93-5509-4dff-af1a-2eb7e183412a
 # ╠═14201d40-f60b-447b-b317-6e08c463f4fd
 # ╠═212d8e6d-afee-44fe-a633-35e2423dfa44
+# ╠═ac1252de-a403-4ffd-ae3f-553d36fd9c68
 # ╟─c525c29a-8aff-497e-b8a3-50ea03073c5d
 # ╠═2274e8b9-ef94-402b-a17d-5dcf6bd471ea
 # ╠═2b93bb69-d6b4-43e4-80cb-9e8904b74dff
