@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.5
+# v0.14.7
 
 using Markdown
 using InteractiveUtils
@@ -24,6 +24,14 @@ all_results = CSV.read(
 	"../results/results_with_disagreement.csv",
 	DataFrame
 )
+
+# ╔═╡ 50bc439d-ea24-46bc-8911-45e6fb709f65
+md"""
+## Confidence by disagreement
+"""
+
+# ╔═╡ 753b0ad2-eec7-4499-a124-209cf8f40142
+
 
 # ╔═╡ 3f081b80-7325-4c11-907d-e2e6aa1a1b5f
 md"""
@@ -320,6 +328,8 @@ end
 # ╔═╡ Cell order:
 # ╠═e8edf6b8-c218-11eb-1fc4-7984a8fbd724
 # ╠═9d1ee5a2-ca6e-45cf-a849-745ed345d36e
+# ╟─50bc439d-ea24-46bc-8911-45e6fb709f65
+# ╠═753b0ad2-eec7-4499-a124-209cf8f40142
 # ╟─3f081b80-7325-4c11-907d-e2e6aa1a1b5f
 # ╠═36611088-145a-45d8-afe3-fd206c80c9ae
 # ╠═064c1e7e-99bc-476f-a173-f14da6359d92
