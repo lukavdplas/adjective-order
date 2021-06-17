@@ -49,7 +49,7 @@ To illustrate the model and check that everything works, I use an example of a s
 example_scale_points = 1:100
 
 # ╔═╡ 320b3280-072a-4cca-9011-cb94799a9c60
-example_prior = Normal(50, 20)
+example_prior = Normal(50, 5)
 
 # ╔═╡ 746c9a8f-900c-42bc-9326-8e4f06cf075d
 function plot_example_prior()
@@ -63,14 +63,45 @@ end
 # ╔═╡ 7ad46ea1-fb79-4fa6-9f0f-8dd529313275
 plot_example_prior()
 
+# ╔═╡ 5ae0c8ad-efa4-47d5-af77-3c40e4808ba0
+function probability_values(scale_points, prior)
+	density_values = let
+		prior_density(degree) = pdf(prior, degree) * step(scale_points)
+		total_p_mass = sum(prior_density, scale_points)
+
+		prior_density.(scale_points) ./ total_p_mass
+	end
+			
+	cumulative_values = map(1:length(scale_points)) do i
+		sum(k -> density_values[k], 1:i)
+	end
+	
+	Dict(
+		map(0:length(scale_points)) do i
+			if i == 0
+				first(scale_points) - step(scale_points) =>
+					Dict(:density => 0.0, :cumulative => 0.0)
+			else
+				scale_points[i] => 
+					Dict(:density => density_values[i], 
+						:cumulative => cumulative_values[i]
+					)
+			end
+		end
+	)
+end
+
+# ╔═╡ 93e5caed-f31d-4ff7-a905-90ba32ffd7b3
+example_prob_values = probability_values(example_scale_points, example_prior)
+
 # ╔═╡ 8d281fc6-2a73-4dc0-ad57-493393608615
 function example_density(degree)
-	pdf(example_prior, degree)
+	example_prob_values[degree][:density]
 end
 
 # ╔═╡ 6e825f28-448b-416c-be5d-1d5032aba90e
 function example_cumulative(degree)
-	cdf(example_prior, degree)
+	example_prob_values[degree][:cumulative]
 end
 
 # ╔═╡ 2ce9ee34-d870-4e3e-ad79-2f25374a68f3
@@ -97,9 +128,24 @@ $L_0(x | x > \theta) = \cases{
 """
 
 # ╔═╡ c04d4d1a-7e07-40a4-b4b3-d6eb893c03f2
-function literal_listener(x, θ, densityf, cumulativef)	
+function literal_listener(x, θ, scale_points, densityf, cumulativef)	
 	if x >= θ
-		densityf(x) / (1 - cumulativef(θ))
+		step_size = step(scale_points)
+		
+		denominator = if θ > first(scale_points)
+			(1 - cumulativef(θ - step_size))
+		else
+			1.0
+		end
+		
+		fraction = densityf(x) / denominator
+
+		if fraction < Inf 
+			fraction
+		else
+			#fix for when the denominator is zero and the fraction becomes Inf
+			step_size / (last(scale_points) - (θ - step_size))
+		end
 	else
 		0
 	end
@@ -116,7 +162,8 @@ function plot_example_literal_listener(θ)
 	
 	plot!(p,
 		example_scale_points,
-		x -> literal_listener(x, θ, example_density, example_cumulative),
+		x -> literal_listener(x, θ, 
+			example_scale_points, example_density, example_cumulative),
 		fill = 0, fillalpha = 0.5,
 		label = "literal listener"
 	)
@@ -132,6 +179,11 @@ Threshold: $(ll_example_θ)
 
 # ╔═╡ eda0b3cc-9b01-4a71-8ecd-99ab3e4e963e
 plot_example_literal_listener(ll_example_θ)
+
+# ╔═╡ b8822897-2e8c-4a59-b886-1931aa43c7f6
+sum(example_scale_points) do x
+	literal_listener(x, ll_example_θ, example_scale_points, example_density, example_cumulative)
+end
 
 # ╔═╡ dee3660c-6a02-4d79-80fe-514f0befb5df
 md"""
@@ -153,24 +205,18 @@ $\sum P(x) * \text{success}(x)$
 So
 
 $ES(\theta) = \sum_{x < \theta} P(x) \times P(x) \; +$
-$\sum_{x \geq \theta} P(x) \times L_0(x | x \geq \theta)$
+$\sum_{x \geq \theta} P(x) \times L_0(x | \theta)$
 """
 
 # ╔═╡ 25f1631a-8f7b-48b5-8f40-b68e6a8791c3
 function expected_success(θ, scale_points, densityf, cumulativef)
-	term_1 = if θ > minimum(scale_points)
-		sum(filter(x -> x < θ, scale_points)) do x
+	sum(scale_points) do x
+		if x < θ
 			densityf(x) * densityf(x)
+		else
+			densityf(x) * literal_listener(x, θ, scale_points, densityf, cumulativef)
 		end
-	else
-		0
 	end
-	
-	term_2 = sum(filter(x -> x >= θ, scale_points)) do x
-		densityf(x) * literal_listener(x, θ, densityf, cumulativef)
-	end
-	
-	term_1 + term_2
 end
 
 # ╔═╡ d12c6005-dfd2-4292-aa41-6bc454cd50c6
@@ -263,7 +309,14 @@ function probability_threshold(θ, λ, coverage, scale_points, densityf, cumulat
 		# convert to float to prevent type error in some cases
 	)
 	
-	exp_utility(θ) / sum(exp_utility, scale_points)
+	numerator = exp_utility(θ)
+	denominator =  sum(exp_utility, scale_points)
+	
+	if denominator < Inf
+		numerator / denominator
+	else
+		1
+	end
 end
 
 # ╔═╡ 5a768cab-200c-410d-afec-d4011aa6fd6a
@@ -341,22 +394,6 @@ end
 # ╔═╡ 877bfa0e-71eb-4dfd-954d-879538d57537
 md"The plot will use precalculated threshold probabilities."
 
-# ╔═╡ 27a9f319-6e7a-4547-a35c-4556e2555b26
-function plot_example_use_adjective(θ_probabilities)
-	ua(d) = use_adjective(
-		d, 
-		θ_probabilities,
-		example_scale_points)
-	
-	plot(
-		example_scale_points,
-		ua,
-		ylabel = "P",
-		xlabel = "degree",
-		label = "use adjective | degree",
-	)
-end
-
 # ╔═╡ 4dcc331c-745c-4ba1-9ce4-a114800af089
 @bind ua_example_λ Slider(1:5:100, default = 50)
 
@@ -373,11 +410,126 @@ md"Coverage parameter: $(ua_example_coverage)"
 ua_example_θ_probabilities = map(example_scale_points) do θ
 	probability_threshold(θ, ua_example_λ, ua_example_coverage, 
 		example_scale_points, example_density, example_cumulative)
-end ;
+end
+
+# ╔═╡ b42c1d06-2d0e-404b-b697-ea7c0343e4c2
+md"""
+For convenience, the following struct wraps some parameters for the model. The constructor conducts some preperation steps:
+* Get a density and cumulative function from a `Distribution`
+* Generate threshold probabilities
+"""
+
+# ╔═╡ ebfc50fa-c164-49e5-b467-75db3fa6f12a
+struct VagueModel
+	λ
+	coverage
+	scale_points
+	probabilities
+	densityf
+	cumulativef
+	θ_probabilities
+	
+	#constructor
+	VagueModel(λ, coverage, scale_points, prior) = let
+		probabilities = probability_values(scale_points, prior)
+		
+		function densityf(degree)
+			probabilities[degree][:density]
+		end
+		
+		function cumulativef(degree)
+			probabilities[degree][:cumulative]
+		end
+		
+		θ_probabilities = map(scale_points) do θ
+			probability_threshold(θ, λ, coverage,
+				scale_points, densityf, cumulativef)
+		end
+		
+		new(λ, coverage, scale_points, probabilities, 
+			densityf, cumulativef, θ_probabilities)
+	end
+end
+
+# ╔═╡ b4a9031d-1e8e-42e8-8d86-a8352a5d05e2
+md"""
+We can now make a new method of the `use_adjective` function that takes a `VagueModel` struct.
+"""
+
+# ╔═╡ fbc35f8a-46e2-4c76-92c2-333b9d8a7e48
+function use_adjective(degree, model::VagueModel)
+	use_adjective(degree, model.θ_probabilities, model.scale_points)
+end
+
+# ╔═╡ 27a9f319-6e7a-4547-a35c-4556e2555b26
+function plot_example_use_adjective(θ_probabilities)
+	ua(d) = use_adjective(
+		d, 
+		θ_probabilities,
+		example_scale_points)
+	
+	plot(
+		example_scale_points,
+		ua,
+		ylabel = "P",
+		xlabel = "degree",
+		label = "use adjective | degree",
+	)
+end
 
 # ╔═╡ d3dbf582-cb9b-4bc5-83c9-28a2c88269b8
 let
 	p = plot_example_use_adjective(ua_example_θ_probabilities)
+end
+
+# ╔═╡ 9b8deef0-42d4-4885-9564-57b4ac22e253
+md"""
+## Alternative interpretation for bimodal cases
+"""
+
+# ╔═╡ e4de916a-0eed-4815-b117-aaa907f75dd7
+function group_level_use_adjective(degree, prior::MixtureModel)
+	n_components = length(prior.components)
+	
+	component_mean(i) = mean(prior.components[i])
+	
+	sum(1:n_components) do i
+		component = prior.components[i]
+		weight = probs(prior)[i]
+		
+		prob = pdf(component, degree)  * weight / pdf(prior, degree)
+		highest = mean(component) > mean(prior)
+		
+		prob * highest
+	end
+end
+
+# ╔═╡ 62a3dda6-0ff8-4edb-9907-735659a7b2a9
+example_bimodal = MixtureModel([Normal(30, 5), Normal(70, 5)])
+
+# ╔═╡ 59f6abde-4c06-44e1-8528-e7306047bfa2
+let
+	p_prior = plot(example_scale_points,
+		x -> pdf(example_bimodal, x),
+		label = :none,
+		title = "prior"
+	)
+	
+	p_speaker = plot(
+		example_scale_points,
+		x -> group_level_use_adjective(x, example_bimodal),
+		label = "group-level speaker"
+	)
+	
+	vague_model = VagueModel(300.0, -0.01, example_scale_points, example_bimodal)
+	
+	plot!(p_speaker,
+		example_scale_points,
+		x -> use_adjective(x, vague_model),
+		label = "original speaker"
+	)
+	
+	plot(p_speaker, p_prior, layout = (2,1))
 end
 
 # ╔═╡ Cell order:
@@ -388,6 +540,8 @@ end
 # ╠═320b3280-072a-4cca-9011-cb94799a9c60
 # ╠═746c9a8f-900c-42bc-9326-8e4f06cf075d
 # ╠═7ad46ea1-fb79-4fa6-9f0f-8dd529313275
+# ╠═5ae0c8ad-efa4-47d5-af77-3c40e4808ba0
+# ╠═93e5caed-f31d-4ff7-a905-90ba32ffd7b3
 # ╠═8d281fc6-2a73-4dc0-ad57-493393608615
 # ╠═6e825f28-448b-416c-be5d-1d5032aba90e
 # ╟─2ce9ee34-d870-4e3e-ad79-2f25374a68f3
@@ -397,6 +551,7 @@ end
 # ╟─e36d6390-3e61-4053-809c-7451df1f64e8
 # ╟─78254550-795a-47fa-bbb0-598ec245d981
 # ╟─eda0b3cc-9b01-4a71-8ecd-99ab3e4e963e
+# ╠═b8822897-2e8c-4a59-b886-1931aa43c7f6
 # ╟─dee3660c-6a02-4d79-80fe-514f0befb5df
 # ╠═25f1631a-8f7b-48b5-8f40-b68e6a8791c3
 # ╟─d12c6005-dfd2-4292-aa41-6bc454cd50c6
@@ -429,3 +584,11 @@ end
 # ╟─31caa034-ace3-4ffe-9b07-8742d90982ab
 # ╠═c76f04f9-5927-41f5-9f41-7110913a0bf7
 # ╟─d3dbf582-cb9b-4bc5-83c9-28a2c88269b8
+# ╟─b42c1d06-2d0e-404b-b697-ea7c0343e4c2
+# ╠═ebfc50fa-c164-49e5-b467-75db3fa6f12a
+# ╟─b4a9031d-1e8e-42e8-8d86-a8352a5d05e2
+# ╠═fbc35f8a-46e2-4c76-92c2-333b9d8a7e48
+# ╟─9b8deef0-42d4-4885-9564-57b4ac22e253
+# ╠═e4de916a-0eed-4815-b117-aaa907f75dd7
+# ╠═62a3dda6-0ff8-4edb-9907-735659a7b2a9
+# ╠═59f6abde-4c06-44e1-8528-e7306047bfa2

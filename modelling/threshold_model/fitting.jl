@@ -36,9 +36,11 @@ begin
 	
     try
 		using CSV, DataFrames, Distributions, Plots, PlutoUI, Statistics, Optim
+		using Turing, MCMCChains
 	catch
 		Pkg.instantiate()
 		using CSV, DataFrames, Distributions, Plots, PlutoUI, Statistics, Optim
+		using Turing, MCMCChains
 	end
 end
 
@@ -180,7 +182,7 @@ begin
 	)
 	
 	#convenient retrieval function
-	function get_scale_points(case)	
+	function get_scale_points(case)
 		scales_dict[(case.scenario), (case.adj_target)]
 	end
 end
@@ -218,31 +220,6 @@ begin
 	end
 end
 
-# ╔═╡ 7584a0da-c1ef-46c2-a29f-14be4a607f97
-md"""
-Now we need one more thing.
-
-The semantic requires a cumulative and density function for the prior distribution. The functions `pdf` and `cdf` do exactly that, but it's more convenient to write them as unary functions.
-
-For the density, we also need to make a small change: since we use discrete probabilities and the step sizes are not equal to 1, we need to rescale the density.
-"""
-
-# ╔═╡ 2da5f80d-cc6a-476d-93e8-e9aca99f2634
-function get_cumulative(case)
-	prior = get_prior(case)
-	cumulative(x) = cdf(prior, x)
-end
-
-# ╔═╡ 3183d56d-2fc9-413c-87ed-80d8ebe48b2c
-function get_density(case)
-	prior = get_prior(case)
-	scale_points = get_scale_points(case)
-	
-	step_size = scale_points.step
-	
-	density(x) = pdf(prior, x) * step_size
-end
-
 # ╔═╡ ada1c503-8664-4611-bc0a-3c6ce0a41602
 md"""
 ## Semantic task results
@@ -275,7 +252,9 @@ function get_results(case)
 	
 	combined = combine(grouped, 
 		scale_column => first => :degree,
-		:response => selection_rate => "ratio_selected"
+		:response => selection_rate => "ratio_selected",
+		:response => count => "n_selected",
+		:response => length => "n_total"
 	)
 	
 	sorted = sort(combined, :degree)
@@ -300,19 +279,14 @@ For each case, we estimate the `use_adjective` probability function based on the
 # ╔═╡ 088db32d-cdfc-4105-aaaa-1cc51b812c72
 function MSE_per_case(parameters, case)
 	λ, coverage = parameters
-	
 	scale_points = get_scale_points(case)
-	density = get_density(case)
-	cumulative = get_cumulative(case)
+	prior = get_prior(case)
 	results = get_results(case)
 	
-	θ_probabilities = map(scale_points) do θ
-		model.probability_threshold(θ, λ, coverage,
-			scale_points, density, cumulative)
-	end
+	vague_model = model.VagueModel(λ, coverage, scale_points, prior)
 		
 	p_predicted = map(results.degree) do d
-		model.use_adjective(d, θ_probabilities, scale_points)
+		model.use_adjective(d, vague_model)
 	end
 	
 	p_observed = results.ratio_selected
@@ -339,11 +313,7 @@ Now we can find the values of λ and $c$ that minimise the error.
 initial_values = [50.0, 0.0]
 
 # ╔═╡ 705af09d-7f4f-496c-ac89-29fd461bae4f
-opt_result = let
-	optimize(MSE,
-		initial_values
-	)
-end
+opt_result = optimize(MSE, initial_values)
 
 # ╔═╡ 0bc81ff1-b5e5-4fff-af12-19c41c750dcd
 optimal_λ, optimal_coverage = Optim.minimizer(opt_result)
@@ -369,7 +339,7 @@ Plot the predictions and observations together:
 """
 
 # ╔═╡ f5c6b055-2b00-4297-9dde-5a58f78630a4
-function plot_case_comparsion(case, λ, coverage; kwargs...)
+function plot_case_comparison(case, λ, coverage; kwargs...)
 	p = plot(
 		ylabel = "P",
 		xlabel = "degree",
@@ -378,17 +348,14 @@ function plot_case_comparsion(case, λ, coverage; kwargs...)
 	#get predicted selection probabilities
 	
 	scale_points = get_scale_points(case)
-	density = get_density(case)
-	cumulative = get_cumulative(case)
+	prior = get_prior(case)
 	results = get_results(case)
 	
-	θ_probabilities = map(scale_points) do θ
-		model.probability_threshold(θ, λ, coverage,
-			scale_points, density, cumulative)
-	end
+	vague_model = model.VagueModel(λ, coverage, scale_points, prior)
+	
 	
 	p_predicted = map(scale_points) do d
-		model.use_adjective(d, θ_probabilities, scale_points)
+		model.use_adjective(d, vague_model)
 	end
 	
 	plot!(p,
@@ -410,7 +377,7 @@ end
 let
 	plots = map(eachrow(cases_overview)) do case
 		name = join([case.adj_target, case.scenario, case.condition], ", ")
-		plot_case_comparsion(case, optimal_λ, optimal_coverage,
+		plot_case_comparison(case, optimal_λ, optimal_coverage,
 			title = name, legend = nothing,
 			titlefontsize = 12
 		)
@@ -430,11 +397,7 @@ Try fitting the parameters for each case instead of estimating them globally.
 opt_results_per_case = map(eachrow(cases_overview)) do case
 	case_MSE(parameters) = MSE_per_case(parameters, case)
 	
-	opt_result = let
-		optimize(case_MSE,
-			initial_values
-		)
-	end
+	opt_result = optimize(case_MSE, initial_values)
 end
 
 # ╔═╡ 7ebd8837-2d2f-49fe-a15b-faf4fa67258e
@@ -465,13 +428,196 @@ let
 		coverage = result[:coverage]
 		
 		name = join([case.adj_target, case.scenario, case.condition], ", ")
-		plot_case_comparsion(case, λ, coverage,
+		plot_case_comparison(case, λ, coverage,
 			title = name, legend = nothing,
 			titlefontsize = 12
 		)
 	end
 	
 	p = plot(plots..., layout = (4,3), size = (1000, 800))
+end
+
+# ╔═╡ 512eb835-c84d-482b-ad83-db2b0bf85d01
+md"""
+## Adding discrete interpretation
+
+We add an alternative interpretation for the bimodal case, and assume that some portion of people are using that interpretation instead of the one from the vague model.
+
+I call this parameter $\alpha$. Essentially, if a participant is making a semantic judgement in the bimodal case, they have probability $\alpha$ to take a discrete interpretation, and a probability of $1 - \alpha$ to use the vague model with parameters $\lambda$ and $c$. 
+"""
+
+# ╔═╡ f95bdbb2-adb9-4994-bc42-a0845096cd85
+function complex_MSE_per_case(parameters, case)
+	λ, coverage, α = parameters
+	
+	scale_points = get_scale_points(case)
+	prior = get_prior(case)
+	results = get_results(case)
+	
+	vague_model = model.VagueModel(λ, coverage, scale_points, prior)
+	
+	use_adjective_vague = d -> model.use_adjective(d, vague_model)
+	use_adjective_discrete = d -> model.group_level_use_adjective(d, prior)
+		
+	p_predicted = if case.condition == "bimodal"
+		map(results.degree) do d
+			use_adjective_vague(d) * (1-α) + use_adjective_discrete(d) * (α)
+		end
+	else
+		map(results.degree) do d
+			use_adjective_vague(d)
+		end
+	end
+	
+	p_observed = results.ratio_selected
+	
+	squared_errors = (p_predicted .- p_observed).^2
+	mean(squared_errors)
+end
+
+# ╔═╡ c254afb7-19c2-4c66-930c-660cc37ca458
+function complex_MSE(parameters)
+	errors = map(eachrow(cases_overview)) do case
+		complex_MSE_per_case(parameters, case)
+	end
+	
+	mean(errors)
+end
+
+# ╔═╡ b43179d1-9406-4c58-9784-93b6ac18163d
+complex_initial_values = [50.0, 0.0, 0.0]
+
+# ╔═╡ c0428ec4-f000-43e3-9312-0e5365a5d05d
+complex_opt_result = optimize(complex_MSE, complex_initial_values)
+
+# ╔═╡ 4034c6d0-cbc1-49a2-8d71-0c0597f78509
+let
+	opt_parameters = Optim.minimizer(complex_opt_result)
+	minimum = Optim.minimum(complex_opt_result)
+	
+	λ = round(opt_parameters[1], digits = 1)
+	c = round(opt_parameters[2], digits = 3)
+	α = round(opt_parameters[3], digits = 3)
+	mse = round(minimum, digits= 3)
+	
+	md"""
+	Optimal parameters are $\lambda$ = $λ 
+	
+	and $c$ = $c
+	
+	and $\alpha$ = $α
+	
+	Mean square error: $(mse)
+	"""
+end
+
+# ╔═╡ 8d166266-3c90-4f83-8118-0f016d82b648
+function plot_complex_case_comparison(case, λ, coverage, α; kwargs...)
+	p = plot(
+		ylabel = "P",
+		xlabel = "degree",
+	)
+	
+	#get predicted selection probabilities
+	scale_points = get_scale_points(case)
+	prior = get_prior(case)
+	results = get_results(case)
+	
+	vague_model = model.VagueModel(λ, coverage, scale_points, prior)
+	
+	use_adjective_vague = d -> model.use_adjective(d, vague_model)
+	use_adjective_discrete = d -> model.group_level_use_adjective(d, prior)
+		
+	p_predicted = if case.condition == "bimodal"
+		map(scale_points) do d
+			use_adjective_vague(d) * (1-α) + use_adjective_discrete(d) * (α)
+		end
+	else
+		map(scale_points) do d
+			use_adjective_vague(d)
+		end
+	end
+	
+	#plot
+	
+	plot!(p,
+		scale_points,
+		p_predicted,
+		label = "predicted"
+	)
+	
+	scatter!(p,
+		results.degree,
+		results.ratio_selected,
+		label = "observed"
+	)
+	
+	plot!(p; kwargs...)
+end
+
+# ╔═╡ 3ca496da-36db-4e0e-98ee-9135b88eb41b
+let
+	λ, coverage, α = Optim.minimizer(complex_opt_result)
+	
+	plots = map(eachrow(cases_overview)) do case
+		name = join([case.adj_target, case.scenario, case.condition], ", ")
+		plot_complex_case_comparison(case, λ, coverage, α,
+			title = name, legend = nothing,
+			titlefontsize = 12
+		)
+	end
+	
+	p = plot(plots..., layout = (4,3), size = (1000, 800))
+end
+
+# ╔═╡ a0cd2088-ff78-4f71-8236-5df0cd85275f
+md"""
+## Bayesian inference of parameters
+"""
+
+# ╔═╡ 0375e6e3-6880-4ac6-a862-052e9cab09ff
+@model function semantic_model()
+	λ ~ Uniform(1,200)
+	c ~ Uniform(-1.0, 1.0)
+	
+	case = eachrow(cases_overview)[1]
+	
+	for case in eachrow(cases_overview)
+		scale_points = get_scale_points(case)
+		prior = get_prior(case)
+		results = get_results(case)
+
+		speaker = model.VagueModel(λ, c, scale_points, prior)
+
+		for row in eachrow(results)
+			n_selected = row.n_selected
+			n_total = row.n_total
+			degree = row.degree
+
+			p = let
+				prediction = model.use_adjective(degree, speaker)
+				min(prediction, 1.0)
+			end
+
+			n_selected ~ Binomial(n_total, p)
+		end
+	end
+end
+
+# ╔═╡ 047a6a6d-d64a-4e19-912b-5d3086bd78ab
+begin
+	iterations = 5
+	ϵ = 0.05
+	τ = 10
+end;
+
+# ╔═╡ 0b999a88-cca7-46bf-a5e0-f3e10f47139f
+#chain = sample(semantic_model(), HMC(ϵ, τ), iterations)
+
+# ╔═╡ 66c47301-dabb-473c-8b46-86860fbe393a
+let
+	m = semantic_model()
+	optimize(m, MLE())
 end
 
 # ╔═╡ Cell order:
@@ -491,9 +637,6 @@ end
 # ╠═319c4a2c-acdb-46e1-9d1b-69bb3c06661d
 # ╟─88534b4b-08a9-42a1-9b02-ed86293a0b9a
 # ╠═0b9df455-0f9e-489d-a562-486eeaa97cc0
-# ╟─7584a0da-c1ef-46c2-a29f-14be4a607f97
-# ╠═2da5f80d-cc6a-476d-93e8-e9aca99f2634
-# ╠═3183d56d-2fc9-413c-87ed-80d8ebe48b2c
 # ╟─ada1c503-8664-4611-bc0a-3c6ce0a41602
 # ╟─284bf321-935c-421e-8183-eeae4e3fae89
 # ╠═74231275-a5ad-4b1d-a606-af9344b55f33
@@ -514,3 +657,16 @@ end
 # ╠═7ebd8837-2d2f-49fe-a15b-faf4fa67258e
 # ╠═1c147ed6-51d8-4f8b-915b-489de896a597
 # ╠═2f265b25-937e-4b9d-bf6e-75fa42197813
+# ╟─512eb835-c84d-482b-ad83-db2b0bf85d01
+# ╠═f95bdbb2-adb9-4994-bc42-a0845096cd85
+# ╠═c254afb7-19c2-4c66-930c-660cc37ca458
+# ╠═b43179d1-9406-4c58-9784-93b6ac18163d
+# ╠═c0428ec4-f000-43e3-9312-0e5365a5d05d
+# ╟─4034c6d0-cbc1-49a2-8d71-0c0597f78509
+# ╠═8d166266-3c90-4f83-8118-0f016d82b648
+# ╠═3ca496da-36db-4e0e-98ee-9135b88eb41b
+# ╟─a0cd2088-ff78-4f71-8236-5df0cd85275f
+# ╠═0375e6e3-6880-4ac6-a862-052e9cab09ff
+# ╠═66c47301-dabb-473c-8b46-86860fbe393a
+# ╠═047a6a6d-d64a-4e19-912b-5d3086bd78ab
+# ╠═0b999a88-cca7-46bf-a5e0-f3e10f47139f
