@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.14.8
 
 using Markdown
 using InteractiveUtils
@@ -8,9 +8,14 @@ using InteractiveUtils
 begin
     import Pkg
     Pkg.activate("../..")
-	Pkg.instantiate()
 
-    using DataFrames, CSV, Statistics, Plots, PlotThemes
+    try
+		using DataFrames, CSV, Statistics, Plots
+	catch
+		Pkg.instantiate()
+		using DataFrames, CSV, Statistics, Plots
+	end
+	
 	theme(:wong, legend=:outerright)
 end
 
@@ -196,10 +201,7 @@ Filter participants and save filtered results
 
 # ╔═╡ 1936ac3b-861b-437e-bdc6-5dd4d94f48ce
 function include_participant(participant)
-	all([
-			filler_score(participant) >= filler_threshold,
-			sd_response(participant) >= 1
-		])
+	filler_score(participant) >= filler_threshold
 end
 
 # ╔═╡ d0dcb068-f390-4f09-abd2-36d033464679

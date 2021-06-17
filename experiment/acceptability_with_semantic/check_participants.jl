@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.14.8
 
 using Markdown
 using InteractiveUtils
@@ -299,8 +299,7 @@ function include_participant(participant)
 	
 	all([
 			semantic_consistency_score(participant) >= consistency_threshold,
-			filler_score(participant) >= filler_threshold,
-			sd_response(participant) >= 1
+			filler_score(participant) >= filler_threshold
 		])
 end
 
