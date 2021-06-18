@@ -36,11 +36,11 @@ begin
 	
     try
 		using CSV, DataFrames, Distributions, Plots, PlutoUI, Statistics, Optim
-		using Turing, MCMCChains
+		using Turing, MCMCChains, StatsPlots
 	catch
 		Pkg.instantiate()
 		using CSV, DataFrames, Distributions, Plots, PlutoUI, Statistics, Optim
-		using Turing, MCMCChains
+		using Turing, MCMCChains, StatsPlots
 	end
 end
 
@@ -575,50 +575,62 @@ md"""
 ## Bayesian inference of parameters
 """
 
+# ╔═╡ 90560b95-ecf5-4255-9f40-1dd2a9138eeb
+selections = mapreduce(vcat, eachrow(cases_overview)) do case
+	results = get_results(case)
+	results.n_selected
+end
+
 # ╔═╡ 0375e6e3-6880-4ac6-a862-052e9cab09ff
-@model function semantic_model()
+@model function semantic_model(selections)
 	λ ~ Uniform(1,200)
 	c ~ Uniform(-1.0, 1.0)
 	
-	case = eachrow(cases_overview)[1]
+	#get results and predictions based on λ and c
 	
-	for case in eachrow(cases_overview)
+	predictions = mapreduce(vcat, eachrow(cases_overview)) do case
 		scale_points = get_scale_points(case)
 		prior = get_prior(case)
 		results = get_results(case)
 
 		speaker = model.VagueModel(λ, c, scale_points, prior)
-
-		for row in eachrow(results)
-			n_selected = row.n_selected
-			n_total = row.n_total
-			degree = row.degree
-
-			p = let
-				prediction = model.use_adjective(degree, speaker)
-				min(prediction, 1.0)
-			end
-
-			n_selected ~ Binomial(n_total, p)
+		
+		probs = map(results.degree) do degree
+			prediction = model.use_adjective(degree, speaker)
+			min(prediction, 1.0)
 		end
+		
+		DataFrame(
+			:p => probs, 
+			:N => results.n_total
+		)
+	end
+	
+	for i in 1:length(selections)
+		selections[i] ~ Binomial(predictions.N[i], predictions.p[i])
+	end
+	
+	return selections
+end
+
+# ╔═╡ 4b31160a-6026-4130-8af2-4961a363418e
+chains = let
+	iterations = 50
+	sampler = PG(20)
+	
+	mapreduce(chainscat, 1:3) do chain
+		sample(semantic_model(selections), sampler, iterations) 
 	end
 end
 
-# ╔═╡ 047a6a6d-d64a-4e19-912b-5d3086bd78ab
-begin
-	iterations = 5
-	ϵ = 0.05
-	τ = 10
-end;
+# ╔═╡ d7f1822a-6d69-4e1d-bda1-6f30491f6565
+describe(chains)[1]
 
-# ╔═╡ 0b999a88-cca7-46bf-a5e0-f3e10f47139f
-#chain = sample(semantic_model(), HMC(ϵ, τ), iterations)
+# ╔═╡ 5ff029f1-4e7f-4f64-9af2-9967c5a2f012
+describe(chains)[2]
 
-# ╔═╡ 66c47301-dabb-473c-8b46-86860fbe393a
-let
-	m = semantic_model()
-	optimize(m, MLE())
-end
+# ╔═╡ 2dcc7dd2-e810-4697-9e30-8714fb26309d
+plot(chains)
 
 # ╔═╡ Cell order:
 # ╟─bb7f43dc-d45a-4ecb-aa78-d0341fe0c46a
@@ -666,7 +678,9 @@ end
 # ╠═8d166266-3c90-4f83-8118-0f016d82b648
 # ╠═3ca496da-36db-4e0e-98ee-9135b88eb41b
 # ╟─a0cd2088-ff78-4f71-8236-5df0cd85275f
+# ╠═90560b95-ecf5-4255-9f40-1dd2a9138eeb
 # ╠═0375e6e3-6880-4ac6-a862-052e9cab09ff
-# ╠═66c47301-dabb-473c-8b46-86860fbe393a
-# ╠═047a6a6d-d64a-4e19-912b-5d3086bd78ab
-# ╠═0b999a88-cca7-46bf-a5e0-f3e10f47139f
+# ╠═4b31160a-6026-4130-8af2-4961a363418e
+# ╠═d7f1822a-6d69-4e1d-bda1-6f30491f6565
+# ╠═5ff029f1-4e7f-4f64-9af2-9967c5a2f012
+# ╠═2dcc7dd2-e810-4697-9e30-8714fb26309d
