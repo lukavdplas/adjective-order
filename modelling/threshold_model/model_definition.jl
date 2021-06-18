@@ -521,7 +521,7 @@ let
 		label = "group-level speaker"
 	)
 	
-	vague_model = VagueModel(300.0, -0.01, example_scale_points, example_bimodal)
+	vague_model = VagueModel(300.0, 0.01, example_scale_points, example_bimodal)
 	
 	plot!(p_speaker,
 		example_scale_points,
