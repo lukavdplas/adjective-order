@@ -35,10 +35,12 @@ begin
 	# packages for this notebook
 	
     try
-		using CSV, DataFrames, Distributions, Plots, Statistics, Optim
+		using CSV, DataFrames, Distributions, Plots, Statistics
+		using Turing, MCMCChains, StatsPlots
 	catch
 		Pkg.instantiate()
-		using CSV, DataFrames, Distributions, Plots, Statistics, Optim
+		using CSV, DataFrames, Distributions, Plots, Statistics
+		using Turing, MCMCChains, StatsPlots
 	end
 end
 
@@ -62,7 +64,8 @@ Import the overview of stimuli and the results of the semantic task.
 paths = Dict(
 	:stimuli_exp2 => root * "/experiment/acceptability_with_semantic/materials/stimuli_data.csv",
 	:stimuli_exp3 => root * "/experiment/novel_objects/materials/stimuli_data.csv",
-	:results => root * "/modelling/results/results_with_disagreement.csv"
+	:results => root * "/modelling/results/results_with_disagreement.csv",
+	:export => root * "/modelling/results/semantic_model_chain.jls"
 )
 
 # ╔═╡ 56e46a90-adc7-4967-aa50-441dea17d511
@@ -264,305 +267,96 @@ let
 	get_results(case)
 end
 
-# ╔═╡ b4ac858b-df06-4946-b3e2-5eb9d3541962
+# ╔═╡ a0cd2088-ff78-4f71-8236-5df0cd85275f
 md"""
-## Fitting
-
-The model depends on two parameters, $\lambda$ and $c$. For a configuration of these parameters, we want to calculate how far off the model is from the real data.
- 
-
-For each case, we estimate the `use_adjective` probability function based on the prior distribution, and then compare it to the selection probabilities. I use the mean square error (MSE) compare the predictions to the observed values.
+## Bayesian inference of parameters
 """
 
-# ╔═╡ 088db32d-cdfc-4105-aaaa-1cc51b812c72
-function MSE_per_case(parameters, case)
-	λ, coverage = parameters
-	scale_points = get_scale_points(case)
-	prior = get_prior(case)
+# ╔═╡ 90560b95-ecf5-4255-9f40-1dd2a9138eeb
+selections = mapreduce(vcat, eachrow(cases_overview)) do case
 	results = get_results(case)
+	results.n_selected
+end
+
+# ╔═╡ 0375e6e3-6880-4ac6-a862-052e9cab09ff
+@model function semantic_model(selections; model_type = :vague)
+	#prior distribution of parameters
+	λ ~ Uniform(1,250)
+	c ~ Uniform(-1.0, 1.0)
 	
-	vague_model = model.VagueModel(λ, coverage, scale_points, prior)
+	if model_type == :composite
+		α ~ Uniform(0.0, 1.0)
+	end
+	
+	#get predictions based on the parameters
+	predictions = mapreduce(vcat, eachrow(cases_overview)) do case
+		#set up speaker model for this case
+		scale_points = get_scale_points(case)
+		prior = get_prior(case)
+		results = get_results(case)
 		
-	p_predicted = map(results.degree) do d
-		model.use_adjective(d, vague_model)
-	end
-	
-	p_observed = results.ratio_selected
-	
-	squared_errors = (p_predicted .- p_observed).^2
-	mean(squared_errors)
-end
-
-# ╔═╡ 12f9a8ef-f2f9-4e14-aab1-a7f89c1bcd10
-function MSE(parameters)
-	errors = map(eachrow(cases_overview)) do case
-		MSE_per_case(parameters, case)
-	end
-	
-	mean(errors)
-end
-
-# ╔═╡ 2226afd3-aa95-4b9e-9d5b-8addf7b69854
-md"""
-Now we can find the values of λ and $c$ that minimise the error.
-"""
-
-# ╔═╡ 43e46e4e-9c9f-452b-91e1-38921ff65881
-initial_values = [50.0, 0.0]
-
-# ╔═╡ 705af09d-7f4f-496c-ac89-29fd461bae4f
-opt_result = optimize(MSE, initial_values)
-
-# ╔═╡ 0bc81ff1-b5e5-4fff-af12-19c41c750dcd
-optimal_λ, optimal_coverage = Optim.minimizer(opt_result)
-
-# ╔═╡ 057d3937-0da3-42b6-b051-6c1c477740b9
-let
-	λ = round(optimal_λ, digits = 1)
-	c = round(optimal_coverage, digits = 3)
-	mse = round(Optim.minimum(opt_result), digits= 3)
-	
-	md"""
-	Optimal parameters are $\lambda$ = $λ 
-	
-	and $c$ = $c
-	
-	Mean square error: $(mse)
-	"""
-end
-
-# ╔═╡ 00a3912f-7b63-4338-ac25-a44cca17e2db
-md"""
-Plot the predictions and observations together:
-"""
-
-# ╔═╡ f5c6b055-2b00-4297-9dde-5a58f78630a4
-function plot_case_comparison(case, λ, coverage; kwargs...)
-	p = plot(
-		ylabel = "P",
-		xlabel = "degree",
-	)
-	
-	#get predicted selection probabilities
-	
-	scale_points = get_scale_points(case)
-	prior = get_prior(case)
-	results = get_results(case)
-	
-	vague_model = model.VagueModel(λ, coverage, scale_points, prior)
-	
-	
-	p_predicted = map(scale_points) do d
-		model.use_adjective(d, vague_model)
-	end
-	
-	plot!(p,
-		scale_points,
-		p_predicted,
-		label = "predicted"
-	)
-	
-	scatter!(p,
-		results.degree,
-		results.ratio_selected,
-		label = "observed"
-	)
-	
-	plot!(p; kwargs...)
-end
-
-# ╔═╡ 43300428-161a-4ec1-9dc4-e3159ee675ba
-let
-	plots = map(eachrow(cases_overview)) do case
-		name = join([case.adj_target, case.scenario, case.condition], ", ")
-		plot_case_comparison(case, optimal_λ, optimal_coverage,
-			title = name, legend = nothing,
-			titlefontsize = 12
+		speaker = if model_type == :composite
+			model.CompositeModel(λ, c, α, scale_points, prior)
+		else
+			model.VagueModel(λ, c, scale_points, prior)
+		end
+		
+		#predicted probabilities per object
+		probs = map(results.degree) do degree
+			prediction = model.use_adjective(degree, speaker)
+			min(prediction, 1.0)
+		end
+		
+		DataFrame(
+			:p => probs, 
+			:N => results.n_total
 		)
 	end
-	
-	p = plot(plots..., layout = (4,3), size = (1000, 800))
+
+	#evidence (i.e. selection ratios) should be generated from predicted distribution
+	for i in 1:length(selections)
+		selections[i] ~ Binomial(predictions.N[i], predictions.p[i])
+	end
 end
 
-# ╔═╡ e9e955b5-f663-446e-a756-74043c0955a7
-md"""
-### Fit parameters per case
+# ╔═╡ f08e885e-ae5e-4e27-876e-f56f754cb663
+function run_chains(iterations; model_type = :vague)
+	model = semantic_model(selections, model_type = model_type)
+	sampler = PG(20)
 
-Try fitting the parameters for each case instead of estimating them globally.
-"""
-
-# ╔═╡ f99f0abf-cbc7-483b-9507-e3221988f872
-opt_results_per_case = map(eachrow(cases_overview)) do case
-	case_MSE(parameters) = MSE_per_case(parameters, case)
-	
-	opt_result = optimize(case_MSE, initial_values)
+	mapreduce(chainscat, 1:3) do chain
+		sample(model, sampler, iterations) 
+	end
 end
 
-# ╔═╡ 7ebd8837-2d2f-49fe-a15b-faf4fa67258e
-result_summaries = map(opt_results_per_case) do res
-	opt_λ, opt_c = Optim.minimizer(res)
-	mse = Optim.minimum(res)
-	
-	summary = Dict(:λ => opt_λ, :coverage => opt_c, :MSE => mse)
-end
+# ╔═╡ 07505fbd-f3c7-4c8a-91b8-666166cd9a47
+run_sampling = false
 
-# ╔═╡ 0585a10b-4577-442e-9b0f-5bf1eb38251d
-let
-	mean_mse = let
-		errors = map(res -> res[:MSE], result_summaries)
-		round(mean(errors), digits = 3)
+# ╔═╡ 286d06d1-8c2b-4e22-bd90-224187fb4773
+#shoud chain be exported? (turn off for testing)
+export_chain = true
+
+# ╔═╡ c88b29a3-f0a5-4b5e-8a9d-024bf0a8315c
+chains = if run_sampling
+	res = run_chains(1000, model_type = :composite)
+	
+	if export_chain
+		write(paths[:export], res)
 	end
 	
-	md"""
-	Parameters: $(2*length(result_summaries))
-	
-	MSE over entire dataset: $(mean_mse)
-	"""
+	res
+else
+	read(paths[:export], Chains)
 end
 
-# ╔═╡ 1c147ed6-51d8-4f8b-915b-489de896a597
-let
-	subplots = map([:λ, :coverage, :MSE]) do variable
-		values = map(res -> res[variable], result_summaries)
-		
-		histogram(values, bins = 20, legend = :none, title = variable)
-	end
-	
-	plot(subplots..., layout = (3,1))
-end
+# ╔═╡ d7f1822a-6d69-4e1d-bda1-6f30491f6565
+describe(chains)[1]
 
-# ╔═╡ 2f265b25-937e-4b9d-bf6e-75fa42197813
-let
-	cases_results = zip(eachrow(cases_overview), result_summaries)
-	
-	plots = map(cases_results) do (case, result)	
-		λ = result[:λ]
-		coverage = result[:coverage]
-		
-		name = join([case.adj_target, case.scenario, case.condition], ", ")
-		plot_case_comparison(case, λ, coverage,
-			title = name, legend = nothing,
-			titlefontsize = 12
-		)
-	end
-	
-	p = plot(plots..., layout = (4,3), size = (1000, 800))
-end
+# ╔═╡ 5ff029f1-4e7f-4f64-9af2-9967c5a2f012
+describe(chains)[2]
 
-# ╔═╡ 512eb835-c84d-482b-ad83-db2b0bf85d01
-md"""
-## Adding discrete interpretation
-
-We add an alternative interpretation for the bimodal case, and assume that some portion of people are using that interpretation instead of the one from the vague model.
-
-I call this parameter $\alpha$. Essentially, if a participant is making a semantic judgement in the bimodal case, they have probability $\alpha$ to take a discrete interpretation, and a probability of $1 - \alpha$ to use the vague model with parameters $\lambda$ and $c$. 
-"""
-
-# ╔═╡ f95bdbb2-adb9-4994-bc42-a0845096cd85
-function complex_MSE_per_case(parameters, case)
-	λ, coverage, α = parameters
-	
-	scale_points = get_scale_points(case)
-	prior = get_prior(case)
-	results = get_results(case)
-	
-	speaker = model.CompositeModel(λ, coverage, α, scale_points, prior)
-		
-	p_predicted = map(results.degree) do degree
-		model.use_adjective(degree, speaker)
-	end
-	
-	p_observed = results.ratio_selected
-	
-	squared_errors = (p_predicted .- p_observed).^2
-	mean(squared_errors)
-end
-
-# ╔═╡ c254afb7-19c2-4c66-930c-660cc37ca458
-function complex_MSE(parameters)
-	errors = map(eachrow(cases_overview)) do case
-		complex_MSE_per_case(parameters, case)
-	end
-	
-	mean(errors)
-end
-
-# ╔═╡ b43179d1-9406-4c58-9784-93b6ac18163d
-complex_initial_values = [50.0, 0.0, 0.0]
-
-# ╔═╡ c0428ec4-f000-43e3-9312-0e5365a5d05d
-complex_opt_result = optimize(complex_MSE, complex_initial_values)
-
-# ╔═╡ 4034c6d0-cbc1-49a2-8d71-0c0597f78509
-let
-	opt_parameters = Optim.minimizer(complex_opt_result)
-	minimum = Optim.minimum(complex_opt_result)
-	
-	λ = round(opt_parameters[1], digits = 1)
-	c = round(opt_parameters[2], digits = 3)
-	α = round(opt_parameters[3], digits = 3)
-	mse = round(minimum, digits= 3)
-	
-	md"""
-	Optimal parameters are $\lambda$ = $λ 
-	
-	and $c$ = $c
-	
-	and $\alpha$ = $α
-	
-	Mean square error: $(mse)
-	"""
-end
-
-# ╔═╡ 8d166266-3c90-4f83-8118-0f016d82b648
-function plot_complex_case_comparison(case, λ, coverage, α; kwargs...)
-	p = plot(
-		ylabel = "P",
-		xlabel = "degree",
-	)
-	
-	#get predicted selection probabilities
-	scale_points = get_scale_points(case)
-	prior = get_prior(case)
-	results = get_results(case)
-	
-	speaker = model.CompositeModel(λ, coverage, α, scale_points, prior)
-	
-	p_predicted = map(scale_points) do degree
-		model.use_adjective(degree, speaker)
-	end
-	
-	#plot
-	
-	plot!(p,
-		scale_points,
-		p_predicted,
-		label = "predicted"
-	)
-	
-	scatter!(p,
-		results.degree,
-		results.ratio_selected,
-		label = "observed"
-	)
-	
-	plot!(p; kwargs...)
-end
-
-# ╔═╡ 3ca496da-36db-4e0e-98ee-9135b88eb41b
-let
-	λ, coverage, α = Optim.minimizer(complex_opt_result)
-	
-	plots = map(eachrow(cases_overview)) do case
-		name = join([case.adj_target, case.scenario, case.condition], ", ")
-		plot_complex_case_comparison(case, λ, coverage, α,
-			title = name, legend = nothing,
-			titlefontsize = 12
-		)
-	end
-	
-	p = plot(plots..., layout = (4,3), size = (1000, 800))
-end
+# ╔═╡ 2dcc7dd2-e810-4697-9e30-8714fb26309d
+plot(chains)
 
 # ╔═╡ Cell order:
 # ╟─bb7f43dc-d45a-4ecb-aa78-d0341fe0c46a
@@ -585,28 +379,13 @@ end
 # ╟─284bf321-935c-421e-8183-eeae4e3fae89
 # ╠═74231275-a5ad-4b1d-a606-af9344b55f33
 # ╠═944137fc-f136-4ad5-bd0a-df8189249b31
-# ╟─b4ac858b-df06-4946-b3e2-5eb9d3541962
-# ╠═088db32d-cdfc-4105-aaaa-1cc51b812c72
-# ╠═12f9a8ef-f2f9-4e14-aab1-a7f89c1bcd10
-# ╟─2226afd3-aa95-4b9e-9d5b-8addf7b69854
-# ╠═43e46e4e-9c9f-452b-91e1-38921ff65881
-# ╠═705af09d-7f4f-496c-ac89-29fd461bae4f
-# ╠═0bc81ff1-b5e5-4fff-af12-19c41c750dcd
-# ╟─057d3937-0da3-42b6-b051-6c1c477740b9
-# ╟─00a3912f-7b63-4338-ac25-a44cca17e2db
-# ╠═f5c6b055-2b00-4297-9dde-5a58f78630a4
-# ╠═43300428-161a-4ec1-9dc4-e3159ee675ba
-# ╟─e9e955b5-f663-446e-a756-74043c0955a7
-# ╠═f99f0abf-cbc7-483b-9507-e3221988f872
-# ╠═7ebd8837-2d2f-49fe-a15b-faf4fa67258e
-# ╟─0585a10b-4577-442e-9b0f-5bf1eb38251d
-# ╠═1c147ed6-51d8-4f8b-915b-489de896a597
-# ╠═2f265b25-937e-4b9d-bf6e-75fa42197813
-# ╟─512eb835-c84d-482b-ad83-db2b0bf85d01
-# ╠═f95bdbb2-adb9-4994-bc42-a0845096cd85
-# ╠═c254afb7-19c2-4c66-930c-660cc37ca458
-# ╠═b43179d1-9406-4c58-9784-93b6ac18163d
-# ╠═c0428ec4-f000-43e3-9312-0e5365a5d05d
-# ╟─4034c6d0-cbc1-49a2-8d71-0c0597f78509
-# ╠═8d166266-3c90-4f83-8118-0f016d82b648
-# ╠═3ca496da-36db-4e0e-98ee-9135b88eb41b
+# ╟─a0cd2088-ff78-4f71-8236-5df0cd85275f
+# ╠═90560b95-ecf5-4255-9f40-1dd2a9138eeb
+# ╠═0375e6e3-6880-4ac6-a862-052e9cab09ff
+# ╠═f08e885e-ae5e-4e27-876e-f56f754cb663
+# ╠═07505fbd-f3c7-4c8a-91b8-666166cd9a47
+# ╠═286d06d1-8c2b-4e22-bd90-224187fb4773
+# ╠═c88b29a3-f0a5-4b5e-8a9d-024bf0a8315c
+# ╠═d7f1822a-6d69-4e1d-bda1-6f30491f6565
+# ╠═5ff029f1-4e7f-4f64-9af2-9967c5a2f012
+# ╠═2dcc7dd2-e810-4697-9e30-8714fb26309d
