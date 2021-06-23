@@ -35,11 +35,11 @@ begin
 	# packages for this notebook
 	
     try
-		using CSV, DataFrames, Distributions, Plots, Statistics
+		using CSV, DataFrames, Distributions, Plots, Statistics, Optim
 		using Turing, MCMCChains, StatsPlots
 	catch
 		Pkg.instantiate()
-		using CSV, DataFrames, Distributions, Plots, Statistics
+		using CSV, DataFrames, Distributions, Plots, Statistics, Optim
 		using Turing, MCMCChains, StatsPlots
 	end
 end
@@ -65,7 +65,8 @@ paths = Dict(
 	:stimuli_exp2 => root * "/experiment/acceptability_with_semantic/materials/stimuli_data.csv",
 	:stimuli_exp3 => root * "/experiment/novel_objects/materials/stimuli_data.csv",
 	:results => root * "/modelling/results/results_with_disagreement.csv",
-	:export => root * "/modelling/results/semantic_model_chain.jls"
+	:export => root * "/modelling/results/semantic_model_chain.jls",
+	:figures => root * "/figures/"
 )
 
 # ╔═╡ 56e46a90-adc7-4967-aa50-441dea17d511
@@ -352,11 +353,384 @@ end
 # ╔═╡ d7f1822a-6d69-4e1d-bda1-6f30491f6565
 describe(chains)[1]
 
-# ╔═╡ 5ff029f1-4e7f-4f64-9af2-9967c5a2f012
+# ╔═╡ 054a8859-dff2-4588-8ac6-5f45c884a6d5
 describe(chains)[2]
 
-# ╔═╡ 2dcc7dd2-e810-4697-9e30-8714fb26309d
-plot(chains)
+# ╔═╡ 38bc06e2-91f7-42df-b051-e0702df27969
+let
+	p1 = meanplot(chains)
+	p2 = density(chains)
+	
+	plot(p1, p2, layout = (1,2), size = (650, 600))
+end
+
+# ╔═╡ 1882081e-e66b-40a1-995a-a1234265217f
+function plot_parameter(parameter)
+	data = chains[parameter]
+	vector = reshape(data, length(data))
+	
+	xlims_dict = Dict(
+		:λ => (0, 250),
+		:c => (-0.2, 0.05),
+		:α => (0.0, 1.0)
+	)
+	
+	p = density(vector,
+		xlims = xlims_dict[parameter],
+		color = :black,
+		fill = 0, fillcolor = 3, fillalpha = 0.75,
+		title = parameter,
+		xlabel = "value",
+		ylabel = "density",
+		legend = :none,
+	)
+	
+	p
+end
+
+# ╔═╡ 3a3af14d-99b5-45c3-9ffb-5d90bc0de7c2
+let
+	parameters = [:λ, :c, :α]
+	
+	subplots = map(plot_parameter, parameters)
+	
+	plot(subplots..., layout = (3,1), size = (400, 600))
+end
+
+# ╔═╡ 40028cea-72cb-45b1-b12e-1950bab1e046
+md"""
+## Plot predictions vs. data
+"""
+
+# ╔═╡ dd797a0b-47c2-4d2c-ac83-b877e9cb32dc
+function get_interval(parameter)
+	data = quantile(chains, q = [0.025, 0.975])
+	parameter_data= DataFrame(data[parameter])
+	
+	lower, upper = parameter_data[1, "2.5%"], parameter_data[1, "97.5%"]
+end
+
+# ╔═╡ 67b82a4a-31ad-410d-9f93-1defacb70ae9
+begin
+	λ_interval = get_interval(:λ)
+	c_interval = get_interval(:c)
+	α_interval = get_interval(:α)
+end ;
+
+# ╔═╡ 6ce1d407-b9b7-4799-8357-7a8b8917e55d
+md"""
+## Model comparisons
+"""
+
+# ╔═╡ 5d8f8f9f-b4e5-4d13-8025-04024881efab
+md"""
+Compare the likelihood of the results for the composite and vague model, given the *best fit* values for each of the parameters. (Optimal parameter values are calculated in `fitting.jl`.)
+"""
+
+# ╔═╡ c8e3bce8-8381-4e76-98cf-444c11310221
+function data_likelihood_vague(parameters; transform = true)
+	λ, c = parameters
+	
+	if transform
+		-1 * logprob"selections = selections | model = semantic_model(nothing), λ = λ, c = c"
+	else
+		prob"selections = selections | model = semantic_model(nothing), λ = λ, c = c"
+	end
+end
+
+# ╔═╡ 96de5fcc-7fc5-4171-ab26-62b685dcd007
+@model function semantic_model_composite(selections)
+	#prior distribution of parameters
+	λ ~ Uniform(1,250)
+	c ~ Uniform(-1.0, 1.0)
+	α ~ Uniform(0.0, 1.0)
+
+	#get predictions based on the parameters
+	predictions = mapreduce(vcat, eachrow(cases_overview)) do case
+		#set up speaker model for this case
+		scale_points = get_scale_points(case)
+		prior = get_prior(case)
+		results = get_results(case)
+		
+		speaker = model.CompositeModel(λ, c, α, scale_points, prior)
+		
+		#predicted probabilities per object
+		probs = map(results.degree) do degree
+			prediction = model.use_adjective(degree, speaker)
+			min(prediction, 1.0)
+		end
+		
+		DataFrame(
+			:p => probs, 
+			:N => results.n_total
+		)
+	end
+
+	#evidence (i.e. selection ratios) should be generated from predicted distribution
+	for i in 1:length(selections)
+		selections[i] ~ Binomial(predictions.N[i], predictions.p[i])
+	end
+end
+
+# ╔═╡ c1e5467e-d76a-4ffc-b53a-48f811da5a8a
+function data_likelihood_composite(parameters; transform = true)
+	λ, c, α = parameters
+	
+	if transform
+		-1 * logprob"selections = selections | model = semantic_model_composite(nothing), λ = λ, c = c, α = α"
+	else
+		prob"selections = selections | model = semantic_model_composite(nothing), λ = λ, c = c, α = α"
+	end
+end
+
+# ╔═╡ 21b66fad-52b3-410d-8512-3d6a26d171f1
+opt_vague_result = let
+	initial_values = [100.0, 0.0]
+	result = optimize(data_likelihood_vague, initial_values)
+end
+
+# ╔═╡ ab0939c7-f16f-4c2a-961f-a3568b8e31d5
+opt_vague_parameters = Optim.minimizer(opt_vague_result)
+
+# ╔═╡ e5b65621-df27-4df4-beed-811475a5a17c
+opt_composite_result = let
+	initial_values = [100.0, 0.0, 0.0]
+	result = optimize(data_likelihood_composite, initial_values)
+end
+
+# ╔═╡ 3af2c374-84be-4aa4-b36f-4cb03e9dc9b7
+opt_composite_parameters = Optim.minimizer(opt_composite_result)
+
+# ╔═╡ 67755e76-51a9-4356-9667-c11703fec270
+function predictions(case)
+	scale_points = get_scale_points(case)
+	prior = get_prior(case)
+	
+	#prediction with mean values of parameters
+	
+	mode_speaker = model.CompositeModel(opt_composite_parameters..., scale_points, prior)
+	
+	mode_probs = map(scale_points) do d
+		model.use_adjective(d, mode_speaker)
+	end
+	
+	# 95% confidence interval
+	
+	confidence_interval = let
+		parameter_bounds = [(λ, c, α)
+			for λ in get_interval(:λ) 
+			for c in get_interval(:c)
+			for α in get_interval(:α)]
+		
+		bounds_data = mapreduce(hcat, parameter_bounds) do (λ, c, α)
+			speaker = model.CompositeModel(λ, c, α, scale_points, prior)
+			probabilities = map(scale_points) do d
+				model.use_adjective(d, speaker)
+			end
+		end
+		
+		n_items, n_configurations = size(bounds_data)
+		
+		lower_bounds = map(1:n_items) do i
+			mode_probs[i] - minimum(bounds_data[i, :]) 
+		end
+		
+		upper_bounds = map(1:n_items) do i
+			maximum(bounds_data[i, :]) - mode_probs[i]
+		end
+		
+		lower_bounds, upper_bounds
+	end
+	
+	mode_probs, confidence_interval
+end
+
+# ╔═╡ bc0e77d6-4b11-44a4-a909-77d15e411ac9
+function plot_case_comparison(case; kwargs...)
+	p = plot(
+		ylabel = "P($(case.adj_target) | degree)",
+		xlabel = "degree",
+	)
+	
+	#get predicted selection probabilities
+	
+	scale_points = get_scale_points(case)
+	results = get_results(case)
+	
+	mean_predictions, confidence_interval = predictions(case)
+	
+	plot!(p,
+		scale_points,
+		mean_predictions,
+		ribbon = confidence_interval,
+		fillalpha = 0.3,
+		label = "predicted",
+		color = 3,
+	)
+	
+	scatter!(p,
+		results.degree,
+		results.ratio_selected,
+		label = "observed",
+		markerstrokewidth=0,
+		color = 7,
+	)
+	
+	plot!(p; kwargs...)
+end
+
+# ╔═╡ a1565fa6-08d1-411c-8779-3d7c6d83f7af
+comparison_plot = let
+	scenario_index(scenario) = let
+		scenario_order = ["tv", "couch", "ball", "spring"]
+		findfirst(isequal(scenario), scenario_order)
+	end
+	
+	sorted_cases = sort(cases_overview, :scenario, by = scenario_index)
+	
+	plots = map(eachrow(sorted_cases)) do case
+		name = if case.condition == "none"
+			"$(case.adj_target) $(case.scenario)"
+		else
+			"$(case.adj_target) $(case.scenario) ($(case.condition))"
+		end
+		
+		plot_case_comparison(case,
+			title = name, legend = nothing,
+			titlefontsize = 12,
+			guidefontsize = 9,
+		)
+	end
+	
+	subplots = plot(plots..., layout = (4,3), size = (1000, 900))
+	
+	legendplot = plot_case_comparison(
+		first(cases_overview),
+		xlims = (-10, -5),
+		grid = false,
+		showaxis = false,
+		ticks = nothing,
+		legend = :top,
+		size = (1000, 100),
+		guide = ""
+	)
+	
+	plot(subplots, legendplot, layout = grid(2,1, heights = [0.9,0.1]), 
+		size = (1000, 1000)
+	)
+end
+
+# ╔═╡ 002fb827-a54c-41c4-86e5-18dbee13d96d
+if "figures" ∈ readdir(root)
+	savefig(comparison_plot, paths[:figures] * "semantic_model_comparison.pdf")
+	md"Figure saved!"
+end
+
+# ╔═╡ 96e84c2d-ca35-4ac6-982f-c6c558c4c7bc
+md"""
+Bayes factor of model $M_1$ compared to $M_2$ given data $D$
+
+$K = \frac{P(D | M_1)}{P(D | M_2)}$
+
+"""
+
+# ╔═╡ 17d4753a-731a-47e6-8a64-82e7d6524ddb
+p_data_vague_model = data_likelihood_vague(
+	opt_vague_parameters, transform = false
+)
+
+# ╔═╡ 78740a3d-c57f-4e11-bd1d-2efb3e0d7380
+p_data_composite_model = data_likelihood_composite(
+	opt_composite_parameters, transform = false
+)
+
+# ╔═╡ 2a2f32f5-f5f1-4573-8bac-e0b4b8b6f48c
+bayes_factor_composite = p_data_composite_model / p_data_vague_model
+
+# ╔═╡ b518dcd5-7209-4787-abc5-a4a44ff28ff3
+md"""
+### Different speaker functions between conditions
+"""
+
+# ╔═╡ c0557729-a137-40b8-92c3-b780061da36b
+cases_overview
+
+# ╔═╡ d0d06901-2854-4d2c-b54f-4c98905a5f60
+@model function semantic_model_noconditions(selections)
+	#prior distribution of parameters
+	λ ~ Uniform(1,250)
+	c ~ Uniform(-1.0, 1.0)
+
+	
+	#get predictions based on the parameters
+	predictions = mapreduce(vcat, eachrow(cases_overview)) do case
+		#set up speaker model for this case
+		scale_points = get_scale_points(case)
+		
+		prior = let
+			if case.condition == "bimodal"
+				unimodal_case = first(filter(cases_overview) do othercase
+					all([	othercase.scenario == case.scenario,
+							othercase.adj_target == case.adj_target,
+							othercase.condition == "unimodal"])
+					end)
+				
+				get_prior(unimodal_case)
+			else
+				get_prior(case)
+			end
+			
+		end
+		
+		results = get_results(case)
+		
+		speaker = model.VagueModel(λ, c, scale_points, prior)
+		
+		#predicted probabilities per object
+		probs = map(results.degree) do degree
+			prediction = model.use_adjective(degree, speaker)
+			min(prediction, 1.0)
+		end
+		
+		DataFrame(
+			:p => probs, 
+			:N => results.n_total
+		)
+	end
+
+	#evidence (i.e. selection ratios) should be generated from predicted distribution
+	for i in 1:length(selections)
+		selections[i] ~ Binomial(predictions.N[i], predictions.p[i])
+	end
+end
+
+# ╔═╡ 61cb05a7-2f61-4b87-a013-6e3c111f0a5d
+function data_likelihood_noconditions(parameters; transform = true)
+	λ, c = parameters
+	
+	if transform
+		-1 * logprob"selections = selections | model = semantic_model_noconditions(nothing), λ = λ, c = c"
+	else
+		prob"selections = selections | model = semantic_model_noconditions(nothing), λ = λ, c = c"
+	end
+end
+
+# ╔═╡ 3e4058b0-de07-46ea-9100-060f6747acee
+opt_noconditions_result = let
+	initial_values = [100.0, 0.0]
+	result = optimize(data_likelihood_noconditions, initial_values)
+end
+
+# ╔═╡ 79852e31-6ad1-46f4-a4bd-2cde29aaf1b2
+opt_noconditions_parameters = Optim.minimizer(opt_noconditions_result)
+
+# ╔═╡ 49242c29-a25f-4bc3-8540-2956b7cc118a
+p_data_noconditions = data_likelihood_noconditions(
+	opt_noconditions_parameters, transform = false
+)
+
+# ╔═╡ 03c183ae-83e6-4801-b471-4f64f4155d48
+bayes_factor_noconditions = p_data_noconditions / p_data_composite_model
 
 # ╔═╡ Cell order:
 # ╟─bb7f43dc-d45a-4ecb-aa78-d0341fe0c46a
@@ -387,5 +761,35 @@ plot(chains)
 # ╠═286d06d1-8c2b-4e22-bd90-224187fb4773
 # ╠═c88b29a3-f0a5-4b5e-8a9d-024bf0a8315c
 # ╠═d7f1822a-6d69-4e1d-bda1-6f30491f6565
-# ╠═5ff029f1-4e7f-4f64-9af2-9967c5a2f012
-# ╠═2dcc7dd2-e810-4697-9e30-8714fb26309d
+# ╠═054a8859-dff2-4588-8ac6-5f45c884a6d5
+# ╠═38bc06e2-91f7-42df-b051-e0702df27969
+# ╠═1882081e-e66b-40a1-995a-a1234265217f
+# ╟─3a3af14d-99b5-45c3-9ffb-5d90bc0de7c2
+# ╟─40028cea-72cb-45b1-b12e-1950bab1e046
+# ╠═dd797a0b-47c2-4d2c-ac83-b877e9cb32dc
+# ╠═67b82a4a-31ad-410d-9f93-1defacb70ae9
+# ╠═67755e76-51a9-4356-9667-c11703fec270
+# ╠═bc0e77d6-4b11-44a4-a909-77d15e411ac9
+# ╠═a1565fa6-08d1-411c-8779-3d7c6d83f7af
+# ╠═002fb827-a54c-41c4-86e5-18dbee13d96d
+# ╟─6ce1d407-b9b7-4799-8357-7a8b8917e55d
+# ╟─5d8f8f9f-b4e5-4d13-8025-04024881efab
+# ╠═c8e3bce8-8381-4e76-98cf-444c11310221
+# ╠═96de5fcc-7fc5-4171-ab26-62b685dcd007
+# ╠═c1e5467e-d76a-4ffc-b53a-48f811da5a8a
+# ╠═21b66fad-52b3-410d-8512-3d6a26d171f1
+# ╠═ab0939c7-f16f-4c2a-961f-a3568b8e31d5
+# ╠═e5b65621-df27-4df4-beed-811475a5a17c
+# ╠═3af2c374-84be-4aa4-b36f-4cb03e9dc9b7
+# ╟─96e84c2d-ca35-4ac6-982f-c6c558c4c7bc
+# ╠═17d4753a-731a-47e6-8a64-82e7d6524ddb
+# ╠═78740a3d-c57f-4e11-bd1d-2efb3e0d7380
+# ╠═2a2f32f5-f5f1-4573-8bac-e0b4b8b6f48c
+# ╟─b518dcd5-7209-4787-abc5-a4a44ff28ff3
+# ╠═c0557729-a137-40b8-92c3-b780061da36b
+# ╠═d0d06901-2854-4d2c-b54f-4c98905a5f60
+# ╠═61cb05a7-2f61-4b87-a013-6e3c111f0a5d
+# ╠═3e4058b0-de07-46ea-9100-060f6747acee
+# ╠═79852e31-6ad1-46f4-a4bd-2cde29aaf1b2
+# ╠═49242c29-a25f-4bc3-8540-2956b7cc118a
+# ╠═03c183ae-83e6-4801-b471-4f64f4155d48
