@@ -493,6 +493,9 @@ complex_initial_values = [50.0, 0.0, 0.0]
 # ╔═╡ c0428ec4-f000-43e3-9312-0e5365a5d05d
 complex_opt_result = optimize(complex_MSE, complex_initial_values)
 
+# ╔═╡ 89a53274-9ac6-4033-9113-4a1dc44e9e7d
+opt_parameters = Optim.minimizer(complex_opt_result)
+
 # ╔═╡ 4034c6d0-cbc1-49a2-8d71-0c0597f78509
 let
 	opt_parameters = Optim.minimizer(complex_opt_result)
@@ -607,6 +610,7 @@ end
 # ╠═c254afb7-19c2-4c66-930c-660cc37ca458
 # ╠═b43179d1-9406-4c58-9784-93b6ac18163d
 # ╠═c0428ec4-f000-43e3-9312-0e5365a5d05d
+# ╠═89a53274-9ac6-4033-9113-4a1dc44e9e7d
 # ╟─4034c6d0-cbc1-49a2-8d71-0c0597f78509
 # ╠═8d166266-3c90-4f83-8118-0f016d82b648
 # ╠═3ca496da-36db-4e0e-98ee-9135b88eb41b
