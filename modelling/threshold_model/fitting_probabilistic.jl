@@ -154,7 +154,11 @@ md"The vector of all sizes/prices in the sample."
 # ╔═╡ 07aa30df-a6b3-4394-a6cc-1468e8c84647
 function get_stimuli(case)
 	items = filter(stimuli_data) do item
-		item[case.condition] && item.scenario == case.scenario
+		if case.condition == "none"
+			item.scenario == case.scenario
+		else
+			item[case.condition] && item.scenario == case.scenario
+		end
 	end
 	
 	items[:, get_scale(case.adj_target)]
@@ -365,7 +369,7 @@ let
 end
 
 # ╔═╡ 1882081e-e66b-40a1-995a-a1234265217f
-function plot_parameter(parameter)
+function plot_parameter(parameter; kwargs...)
 	data = chains[parameter]
 	vector = reshape(data, length(data))
 	
@@ -379,11 +383,12 @@ function plot_parameter(parameter)
 		xlims = xlims_dict[parameter],
 		color = :black,
 		fill = 0, fillcolor = 3, fillalpha = 0.75,
-		title = parameter,
 		xlabel = "value",
 		ylabel = "density",
 		legend = :none,
 	)
+	
+	plot!(p; kwargs...)
 	
 	p
 end
@@ -392,9 +397,25 @@ end
 let
 	parameters = [:λ, :c, :α]
 	
-	subplots = map(plot_parameter, parameters)
+	subplots = map(parameters) do parameter
+		plot_parameter(parameter, title = parameter)
+	end
 	
 	plot(subplots..., layout = (3,1), size = (400, 600))
+end
+
+# ╔═╡ f7c0074e-af88-421d-aa05-2ca1cb254ddc
+if "figures" ∈ readdir(root)
+	for parameter in [:λ, :c, :α]
+		p = plot_parameter(parameter)
+		
+		ascii_strings = Dict(:λ => "lambda", :c => "c", :α => "alpha")
+		filename = "posterior_distribution_$(ascii_strings[parameter]).pdf"
+		
+		savefig(p, paths[:figures] * filename)
+	end
+	
+	md"Figures saved!"
 end
 
 # ╔═╡ 40028cea-72cb-45b1-b12e-1950bab1e046
@@ -516,7 +537,7 @@ function predictions(case)
 	
 	# 95% confidence interval
 	
-	confidence_interval = let
+	confidence_interval_95 = let
 		parameter_bounds = [(λ, c, α)
 			for λ in get_interval(:λ) 
 			for c in get_interval(:c)
@@ -542,11 +563,23 @@ function predictions(case)
 		lower_bounds, upper_bounds
 	end
 	
-	mode_probs, confidence_interval
+	mode_probs, confidence_interval_95
 end
 
 # ╔═╡ bc0e77d6-4b11-44a4-a909-77d15e411ac9
 function plot_case_comparison(case; kwargs...)
+	pal = let
+		themecolours = PlotThemes.wong_palette
+		
+		colours = if case.condition == "bimodal"
+			[ themecolours[6], themecolours[1], "#eeeeee"]
+		elseif case.condition == "unimodal"
+			[ themecolours[5], themecolours[2], "#eeeeee"]
+		else
+			[ "#006D60", themecolours[3], "#eeeeee"]
+		end
+	end
+	
 	p = plot(
 		ylabel = "P($(case.adj_target) | degree)",
 		xlabel = "degree",
@@ -563,17 +596,19 @@ function plot_case_comparison(case; kwargs...)
 		scale_points,
 		mean_predictions,
 		ribbon = confidence_interval,
-		fillalpha = 0.3,
+		#fillalpha = 0.75, fillcolor = pal[1],
+		fillalpha = 0.75, fillcolor = pal[2],
 		label = "predicted",
-		color = 3,
+		#color = pal[2], lw = 2,
+		color = :black
 	)
 	
 	scatter!(p,
 		results.degree,
 		results.ratio_selected,
 		label = "observed",
-		markerstrokewidth=0,
-		color = 7,
+		color = :black,
+		markersize = 2.5,
 	)
 	
 	plot!(p; kwargs...)
@@ -605,7 +640,7 @@ comparison_plot = let
 	subplots = plot(plots..., layout = (4,3), size = (1000, 900))
 	
 	legendplot = plot_case_comparison(
-		first(cases_overview),
+		last(cases_overview),
 		xlims = (-10, -5),
 		grid = false,
 		showaxis = false,
@@ -729,8 +764,97 @@ p_data_noconditions = data_likelihood_noconditions(
 	opt_noconditions_parameters, transform = false
 )
 
+# ╔═╡ 3a01a930-6e9d-41c4-a0aa-bb9e1d186876
+md"""
+This version does get a better fit compared to both models.
+"""
+
+# ╔═╡ 2efa6ad0-faa3-497c-bc5e-40a49bb05866
+p_data_noconditions / p_data_vague_model
+
 # ╔═╡ 03c183ae-83e6-4801-b471-4f64f4155d48
-bayes_factor_noconditions = p_data_noconditions / p_data_composite_model
+p_data_noconditions / p_data_composite_model
+
+# ╔═╡ 26606497-b1df-4272-becd-58e0e273cf35
+md"""
+So far, we looked at the model's ability to predict the selection ratios (the *y*-values on the plot). We did not look at how well the model predicted the degrees of the objects in the sample (the *x*-values).
+
+The vague and composite model use the same prior distribution, so there is no point in comparing them. But for the "no conditions" model, we mess with the prior distribution, so that's worth considering. It is a bit unfair to manipulate the prior distribution until you get the best fit on the *y*-axis, without including that you get a worse fit on the *x*-axis.
+
+We can calculate the probability of the object sample. These probabilities get very small, so we take the log.
+"""
+
+# ╔═╡ cb94e825-4738-49e9-b45c-a29e86b555eb
+logp_sample = sum(eachrow(cases_overview)) do case
+	scale_points = get_scale_points(case)
+	prior = get_prior(case)
+	stimuli = get_stimuli(case)
+	
+	probabilities = pdf.(prior, stimuli)
+	
+	prob = prod(probabilities)
+	log(10, prob)
+end
+
+# ╔═╡ b1ff8c47-92ba-41d6-a268-7821b6a7e879
+logp_sample_noconditions = sum(eachrow(cases_overview)) do case
+	scale_points = get_scale_points(case)
+	
+	prior = if case.condition == "bimodal"
+		unimodal_case = let
+			first(filter(cases_overview) do othercase
+				all([	othercase.scenario == case.scenario,
+						othercase.adj_target == case.adj_target,
+						othercase.condition == "unimodal"])
+				end)
+		end
+		get_prior(unimodal_case)
+	else
+		get_prior(case)
+	end
+
+	stimuli = get_stimuli(case)
+	
+	probabilities = pdf.(prior, stimuli)
+	prob = prod(probabilities)
+	log(10, prob)
+end
+
+# ╔═╡ 63c11e41-5028-4b04-934c-0a74887e1459
+md"""
+The "no conditions" fit is a lot worse in predicting the sample. Here is the bayes factor on the "true" prior distribution over the version where we treat everything as unimodal.
+"""
+
+# ╔═╡ 32dc6b96-077b-4291-85c0-ead273f5dc7a
+10^(logp_sample - logp_sample_noconditions)
+
+# ╔═╡ 5a65e0f4-c4ee-40df-a3d7-f31e80767fd3
+md"""
+When we include the likelihood of the sample, the "no conditions" model becomes a lot less likely.
+
+Improvement of vague model over no conditions model:
+"""
+
+# ╔═╡ 6098fb5c-ec91-49af-9897-1836583493be
+let
+	noconditions = log(10, p_data_noconditions) + logp_sample_noconditions
+	vague = log(10, p_data_vague_model) + logp_sample
+	
+	10^(vague - noconditions)
+end
+
+# ╔═╡ 2222c017-21d1-45ba-a5cc-c3a5f44b2721
+md"""
+Improvement of composite model over no conditions model:
+"""
+
+# ╔═╡ 00a392d1-fa65-4ab5-863f-d4badd203f8e
+let
+	noconditions = log(10, p_data_noconditions) + logp_sample_noconditions
+	composite = log(10, p_data_composite_model) + logp_sample
+	
+	10^(composite - noconditions)
+end
 
 # ╔═╡ Cell order:
 # ╟─bb7f43dc-d45a-4ecb-aa78-d0341fe0c46a
@@ -764,7 +888,8 @@ bayes_factor_noconditions = p_data_noconditions / p_data_composite_model
 # ╠═054a8859-dff2-4588-8ac6-5f45c884a6d5
 # ╠═38bc06e2-91f7-42df-b051-e0702df27969
 # ╠═1882081e-e66b-40a1-995a-a1234265217f
-# ╟─3a3af14d-99b5-45c3-9ffb-5d90bc0de7c2
+# ╠═3a3af14d-99b5-45c3-9ffb-5d90bc0de7c2
+# ╠═f7c0074e-af88-421d-aa05-2ca1cb254ddc
 # ╟─40028cea-72cb-45b1-b12e-1950bab1e046
 # ╠═dd797a0b-47c2-4d2c-ac83-b877e9cb32dc
 # ╠═67b82a4a-31ad-410d-9f93-1defacb70ae9
@@ -792,4 +917,15 @@ bayes_factor_noconditions = p_data_noconditions / p_data_composite_model
 # ╠═3e4058b0-de07-46ea-9100-060f6747acee
 # ╠═79852e31-6ad1-46f4-a4bd-2cde29aaf1b2
 # ╠═49242c29-a25f-4bc3-8540-2956b7cc118a
+# ╟─3a01a930-6e9d-41c4-a0aa-bb9e1d186876
+# ╠═2efa6ad0-faa3-497c-bc5e-40a49bb05866
 # ╠═03c183ae-83e6-4801-b471-4f64f4155d48
+# ╟─26606497-b1df-4272-becd-58e0e273cf35
+# ╠═cb94e825-4738-49e9-b45c-a29e86b555eb
+# ╠═b1ff8c47-92ba-41d6-a268-7821b6a7e879
+# ╟─63c11e41-5028-4b04-934c-0a74887e1459
+# ╠═32dc6b96-077b-4291-85c0-ead273f5dc7a
+# ╟─5a65e0f4-c4ee-40df-a3d7-f31e80767fd3
+# ╠═6098fb5c-ec91-49af-9897-1836583493be
+# ╟─2222c017-21d1-45ba-a5cc-c3a5f44b2721
+# ╠═00a392d1-fa65-4ab5-863f-d4badd203f8e
