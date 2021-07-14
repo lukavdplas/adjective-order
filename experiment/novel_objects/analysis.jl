@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.14.8
 
 using Markdown
 using InteractiveUtils
@@ -200,40 +200,68 @@ end
 
 # ╔═╡ 79556aa4-c313-47f1-a552-b7e8daa700ab
 function get_palette(condition)
-	main_colour = PlotThemes.wong_palette[get_colour(condition)]
-	palette(cgrad([:white, main_colour], 5, categorical = true))
+	gradient = if condition == "bimodal"
+		cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[1],
+				PlotThemes.wong_palette[6]
+				],scale = :log)
+	elseif condition == "unimodal"
+		cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[2],
+				PlotThemes.wong_palette[5]
+				], scale = :log)
+	else
+		cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[3],
+				"#006D60"
+				], scale = :log)
+	end
+	
+	palette(map(index -> gradient[index], 0.0:0.25:1.0))
 end
 
 # ╔═╡ 9ca85756-6c6c-4e45-ae6b-490d70070776
 confidence_plot = let
 	percentile(adjective, condition,rating) = let
-		subdata = filter(confidence_results) do row
-			row.condition == condition && row.adj_target == adjective
+		if condition ∈ ["bimodal", "unimodal"]
+			subdata = filter(confidence_results) do row
+				row.condition == condition && row.adj_target == adjective
+			end
+		else
+			subdata = filter(confidence_results) do row
+				row.adj_target == adjective
+			end
 		end
 		responses = subdata.response
 		count(r -> r <= rating, responses) / length(responses)
 	end
 	
 	xticklabels =  [
-		"bimodal\nbig", "unimodal\nbig", 
-		"bimodal\nlong", "unimodal\nlong",
-		"bimodal\nexpensive", "unimodal\nexpensive"]
+		"big\nbimodal", "big\nunimodal", 
+		"long\nbimodal", "long\nunimodal",
+		"expensive"]
 	
 	p = plot(
-		xlabel = "condition + adjective",
+		xlabel = "adjective + condition",
 		ylabel = "fraction of responses",
 		legendtitle = "rating",
-		xticks = ([1,2,4,5,7,8], xticklabels),
+		xticks = ([1,2,4,5,7], xticklabels),
 		xtickfontsize = 6, legendtitlefontsize = 10,
 	)
 	
-	adjectives = ["big", "long", "expensive"]
+	target_adjectives = ["big", "long"]
 	conditions = ["bimodal", "unimodal"]
 	
+	#target adjectives separated by condition
 	for condition in conditions
 		for rating in reverse(scale)
-			bar_positions = [1,4,7] .+ (condition == "unimodal")
-			percentiles = map(adj -> percentile(adj, condition, rating), adjectives)
+		
+		
+			bar_positions = [1,4] .+ (condition == "unimodal")
+			percentiles = map(adj -> percentile(adj, condition, rating), target_adjectives)
 
 			bar!(p,
 				bar_positions, 
@@ -245,6 +273,21 @@ confidence_plot = let
 			)
 		end
 	end
+	
+	#expensive (not separated by condition)
+	for rating in reverse(scale)
+		bar_position = 7
+		bar_height = percentile("expensive", nothing, rating)
+		bar!(p,
+			[bar_position], [bar_height],
+			palette = get_palette(nothing),
+			fillcolor = rating,
+			bar_width = 0.7,
+			label = rating,
+		)
+	end
+	
+	
 	
 	p
 end
@@ -513,10 +556,21 @@ function plot_scalar_vs_absolute(data)
 	orders = ["first", "second"]
 	secondary_types = ["scalar", "absolute"]
 	
-	get_colour(secondary_type) = secondary_type == "scalar" ? 3 : 7
 	get_palette(secondary_type) = let
-		main_colour = PlotThemes.wong_palette[get_colour(secondary_type)]
-		palette(cgrad([:white, main_colour], 5, categorical = true))
+		gradient = if secondary_type == "scalar"
+			cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[3],
+				"#006D60"
+			], scale = :log)
+		else
+			cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[7],
+				"#9E3264"
+			], scale = :log)
+		end
+		palette(map(index -> gradient[index], 0.0:0.25:1.0))
 	end
 	
 	for secondary_type in secondary_types

@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.14.8
 
 using Markdown
 using InteractiveUtils
@@ -44,15 +44,15 @@ results_exp3 = filter(row -> row.item_type == "semantic", all_results_exp3)
 
 # ╔═╡ 3b37b492-f870-4fac-939f-70aec7ffd233
 md"""
-## Disgreement ratio 
+## Disgreement potential 
 
 Define `agree_ratio` to calculate the agreement ratio in an array of `true`/`false` responses.
 
-Let $s$ be the array of responsses. For any two participants $i$ and $j$, the probablity that $s_i = s_j$ is equal to
+Let $s$ be the array of responses. For any two participants $i$ and $j$, the probablity that $s_i = s_j$ (i.e. that the participants agree) is equal to
 
 $P((s_i = true \land s_j = true) \lor (s_i = false \land s_j = false))$
 
-which is equivalent to
+Assuming that participants act indepent of each other, this is equivalent to
 
 $P(s_i = true) \cdot P(s_j = true) + P(s_i = false) \cdot P(s_j = false)$
 
@@ -149,7 +149,7 @@ function plot_disagreement(data)
 		ylabel = "disagreement ratio"
 	)
 	
-	get_colour(scenario) = (scenario == "tv") || (scenario == "ball") ? 1 : 2
+	get_colour(scenario) = (scenario == "tv") || (scenario == "ball") ? 3 : 7
 	get_linestyle(adjective) = adjective == "expensive" ? :dash : :solid
 	get_markershape(adjective) = adjective == "expensive" ? :utriangle : :circle
 	
@@ -368,8 +368,12 @@ function plot_confidence_disagreement(results)
 	)
 	
 	pal = let
-		c1 = PlotThemes.wong_palette[3]
-		palette(cgrad([:white, c1], 5, categorical = true))
+		gradient = cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[3],
+				"#006D60"
+				], scale = :log)
+		palette(map(index -> gradient[index], 0.0:0.25:1.0))
 	end
 	
 	for rating in 5:-1:1
@@ -436,8 +440,8 @@ function export_figure(plot, name)
 	if "figures" ∈ readdir(root)
 		plot_path = root * "/figures/"
 		savefig(
-			plot_disagreement(disagreement_results_exp2),
-			plot_path * "disagreement_results_exp2.pdf"
+			plot,
+			plot_path * name
 		)
 		md"Figure saved! ✨"
 	else

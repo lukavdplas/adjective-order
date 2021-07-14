@@ -382,7 +382,7 @@ function plot_parameter(parameter; kwargs...)
 	p = density(vector,
 		xlims = xlims_dict[parameter],
 		color = :black,
-		fill = 0, fillcolor = 3, fillalpha = 0.75,
+		fill = 0, fillcolor = 3,
 		xlabel = "value",
 		ylabel = "density",
 		legend = :none,
@@ -596,10 +596,8 @@ function plot_case_comparison(case; kwargs...)
 		scale_points,
 		mean_predictions,
 		ribbon = confidence_interval,
-		#fillalpha = 0.75, fillcolor = pal[1],
 		fillalpha = 0.75, fillcolor = pal[2],
 		label = "predicted",
-		#color = pal[2], lw = 2,
 		color = :black
 	)
 	

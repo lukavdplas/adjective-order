@@ -542,7 +542,7 @@ plot_illustration_bimodal_grouplevel = let
 		legend = :none,
 		title = "threshold probability",
 		ylabel = "P_θ(degree)", xlabel = "degree",
-		fill = 0, fillalpha = 0.75,
+		fill = 0,
 		color = :black, fillcolor = 1
 	)
 	
@@ -551,11 +551,12 @@ plot_illustration_bimodal_grouplevel = let
 		legend = :none,
 		title = "prior probability",
 		ylabel = "P(degree)", xlabel = "degree",
-		fill = 0, fillalpha = 0.75,
+		fill = 0,
 		color = :black, fillcolor = 1
 	)
 	
-	plot(p_speaker, p_threshold, p_prior, layout = (3,1),
+	plot(p_speaker, p_threshold, p_prior, 
+		layout = grid(3,1, heights = [0.4, 0.4, 0.2]), 
 		size = (400, 600)
 	)
 end
@@ -634,7 +635,7 @@ plot_illustration_unimodal = let
 		legend = :none,
 		title = "prior probability",
 		ylabel = "P(degree)", xlabel = "degree",
-		fill = 0, fillalpha = 0.75,
+		fill = 0,
 		color = :black, fillcolor = 2
 	)
 	
@@ -643,7 +644,7 @@ plot_illustration_unimodal = let
 		legend = :none,
 		title = "threshold probability",
 		ylabel = "P_θ(degree)", xlabel = "degree",
-		fill = 0, fillalpha = 0.75,
+		fill = 0,
 		color = :black, fillcolor = 2
 	)
 	
@@ -655,7 +656,9 @@ plot_illustration_unimodal = let
 		color = 2, lw = 2
 	)
 	
-	p = plot(p_speaker, p_threshold, p_prior, layout = (3,1), size = (400, 600))
+	p = plot(p_speaker, p_threshold, p_prior, 
+		layout = grid(3,1, heights = [0.4, 0.4, 0.2]), 
+		size = (400, 600))
 end
 
 # ╔═╡ 9f1f65aa-ad74-4365-9e64-798005fedfbe
@@ -668,7 +671,7 @@ plot_illustration_bimodal_vague = let
 		legend = :none,
 		title = "prior probability",
 		ylabel = "P(degree)", xlabel = "degree",
-		fill = 0, fillalpha = 0.75,
+		fill = 0,
 		color = :black, fillcolor = 1
 	)
 	
@@ -677,7 +680,7 @@ plot_illustration_bimodal_vague = let
 		legend = :none,
 		title = "threshold probability",
 		ylabel = "P_θ(degree)", xlabel = "degree",
-		fill = 0, fillalpha = 0.75,
+		fill = 0,
 		color = :black, fillcolor = 1
 	)
 	
@@ -689,7 +692,9 @@ plot_illustration_bimodal_vague = let
 		lw = 2,
 	)
 	
-	p = plot(p_speaker, p_threshold, p_prior, layout = (3,1), size = (400, 600))
+	p = plot(p_speaker, p_threshold, p_prior, 
+		layout = grid(3,1, heights = [0.4, 0.4, 0.2]), 
+		size = (400, 600))
 end
 
 # ╔═╡ 341deb17-55a8-464c-8db3-ee72d29e35ce

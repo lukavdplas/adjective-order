@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.7
+# v0.14.8
 
 using Markdown
 using InteractiveUtils
@@ -140,8 +140,27 @@ end
 
 # ╔═╡ 33543aee-4044-4e09-b0ad-2f74b0606680
 function get_palette(condition)
-	main_colour = PlotThemes.wong_palette[get_colour(condition)]
-	palette(cgrad([:white, main_colour], 5, categorical = true))
+	gradient = if condition == "bimodal"
+		cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[1],
+				PlotThemes.wong_palette[6]
+				],scale = :log)
+	elseif condition == "unimodal"
+		cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[2],
+				PlotThemes.wong_palette[5]
+				], scale = :log)
+	else
+		cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[3],
+				"#006D60"
+				], scale = :log)
+	end
+	
+	palette(map(index -> gradient[index], 0.0:0.25:1.0))
 end
 
 # ╔═╡ 7b2998f7-dc66-49b4-9d0d-71a7b357df38
@@ -362,11 +381,22 @@ function plot_scalar_vs_absolute(data)
 	
 	orders = ["first", "second"]
 	secondary_types = ["scalar", "absolute"]
-	
-	get_colour(secondary_type) = secondary_type == "scalar" ? 3 : 7
+
 	get_palette(secondary_type) = let
-		main_colour = PlotThemes.wong_palette[get_colour(secondary_type)]
-		palette(cgrad([:white, main_colour], 5, categorical = true))
+		gradient = if secondary_type == "scalar"
+			cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[3],
+				"#006D60"
+			], scale = :log)
+		else
+			cgrad([
+				"#eeeeee",
+				PlotThemes.wong_palette[7],
+				"#9E3264"
+			], scale = :log)
+		end
+		palette(map(index -> gradient[index], 0.0:0.25:1.0))
 	end
 	
 	for secondary_type in secondary_types
