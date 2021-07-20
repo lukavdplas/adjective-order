@@ -157,6 +157,8 @@ pal2 = let
 		PlotThemes.wong_palette[6]
 	]
 	
+	#palette(colours, preference_scale, rev = true)
+	
 	palette(colours, preference_scale, rev = true)
 end
 
