@@ -489,6 +489,21 @@ md"""
 ### Condition-blind model
 """
 
+# ╔═╡ c0213787-dd06-4e05-bf60-534b7b7794b1
+function get_condition_blind_prior(case)
+	if case.condition == "bimodal"
+		unimodal_case = first(filter(cases_overview) do othercase
+			all([	othercase.scenario == case.scenario,
+					othercase.adj_target == case.adj_target,
+					othercase.condition == "unimodal"])
+			end)
+
+		get_prior(unimodal_case)
+	else
+		get_prior(case)
+	end
+end
+
 # ╔═╡ d0d06901-2854-4d2c-b54f-4c98905a5f60
 @model function semantic_model_noconditions(selections)
 	#prior distribution of parameters
@@ -501,20 +516,7 @@ md"""
 		#set up speaker model for this case
 		scale_points = get_scale_points(case)
 		
-		prior = let
-			if case.condition == "bimodal"
-				unimodal_case = first(filter(cases_overview) do othercase
-					all([	othercase.scenario == case.scenario,
-							othercase.adj_target == case.adj_target,
-							othercase.condition == "unimodal"])
-					end)
-				
-				get_prior(unimodal_case)
-			else
-				get_prior(case)
-			end
-			
-		end
+		prior = get_condition_blind_prior(case)
 		
 		results = get_results(case)
 		
@@ -548,7 +550,7 @@ describe(chains_noconditions)[1]
 describe(chains_noconditions)[2]
 
 # ╔═╡ ac267ba5-1d2f-4652-bbb4-ce756a767d75
-plot_sampling(chains_vague)
+plot_sampling(chains_noconditions)
 
 # ╔═╡ 0be598ee-5a98-4a8a-9f16-370f62289369
 plot_all_parameters(chains_noconditions, [:λ, :c])
@@ -566,26 +568,30 @@ function get_interval(chains, parameter)
 	lower, upper = parameter_data[1, "2.5%"], parameter_data[1, "97.5%"]
 end
 
-# ╔═╡ 67b82a4a-31ad-410d-9f93-1defacb70ae9
-begin
-	λ_interval = get_interval(chains_composite, :λ)
-	c_interval = get_interval(chains_composite, :c)
-	α_interval = get_interval(chains_composite, :α)
-end ;
-
 # ╔═╡ 67755e76-51a9-4356-9667-c11703fec270
-function predictions(case; model_type = :composite)
+function predictions(case, speaker_model, chain; condition_blind = false)
 	scale_points = get_scale_points(case)
-	prior = get_prior(case)
 	
-	#prediction with median values of parameters
+	prior = if condition_blind
+		get_condition_blind_prior(case)
+	else
+		get_prior(case)
+	end
 	
-	median_parameters = [
-		median(chains_composite[:λ]), 
-		median(chains_composite[:c]), 
-		median(chains_composite[:α])]
+	#prediction with mean values of parameters
 	
-	median_speaker = model.CompositeModel(median_parameters..., scale_points, prior)
+	median_parameters = if speaker_model == model.CompositeModel
+		[
+			median(chain[:λ]), 
+			median(chain[:c]), 
+			median(chain[:α])]
+	else
+		[
+			median(chain[:λ]), 
+			median(chain[:c])]	
+	end
+	
+	median_speaker = speaker_model(median_parameters..., scale_points, prior)
 	
 	median_probs = map(scale_points) do d
 		model.use_adjective(d, median_speaker)
@@ -594,13 +600,19 @@ function predictions(case; model_type = :composite)
 	# 95% confidence interval
 	
 	confidence_interval_95 = let
-		parameter_bounds = [(λ, c, α)
-			for λ in get_interval(chains_composite, :λ) 
-			for c in get_interval(chains_composite, :c)
-			for α in get_interval(chains_composite, :α)]
+		parameter_bounds = if speaker_model == model.CompositeModel
+			[(λ, c, α)
+				for λ in get_interval(chain, :λ) 
+				for c in get_interval(chain, :c)
+				for α in get_interval(chain, :α)]
+		else
+			[(λ, c)
+				for λ in get_interval(chain, :λ) 
+				for c in get_interval(chain, :c)]
+		end
 		
-		bounds_data = mapreduce(hcat, parameter_bounds) do (λ, c, α)
-			speaker = model.CompositeModel(λ, c, α, scale_points, prior)
+		bounds_data = mapreduce(hcat, parameter_bounds) do parameters
+			speaker = speaker_model(parameters..., scale_points, prior)
 			probabilities = map(scale_points) do d
 				model.use_adjective(d, speaker)
 			end
@@ -622,8 +634,12 @@ function predictions(case; model_type = :composite)
 	median_probs, confidence_interval_95
 end
 
+# ╔═╡ d1440025-dd2d-42dc-8f57-2a69db7bc58c
+
+
 # ╔═╡ bc0e77d6-4b11-44a4-a909-77d15e411ac9
-function plot_case_comparison(case; kwargs...)
+function plot_case_comparison(case, speaker_model, chain; condition_blind = false,
+		kwargs...)
 	pal = let
 		themecolours = PlotThemes.wong_palette
 		
@@ -646,7 +662,8 @@ function plot_case_comparison(case; kwargs...)
 	scale_points = get_scale_points(case)
 	results = get_results(case)
 	
-	mean_predictions, confidence_interval = predictions(case)
+	mean_predictions, confidence_interval = predictions(case, speaker_model, chain, 
+		condition_blind = condition_blind,)
 	
 	plot!(p,
 		scale_points,
@@ -668,8 +685,8 @@ function plot_case_comparison(case; kwargs...)
 	plot!(p; kwargs...)
 end
 
-# ╔═╡ a1565fa6-08d1-411c-8779-3d7c6d83f7af
-comparison_plot = let
+# ╔═╡ 3eb07cce-4e1d-4cf1-b4b6-5665c66204ac
+function make_comparison_plot(speaker_model, chain; condition_blind = false)
 	scenario_index(scenario) = let
 		scenario_order = ["tv", "couch", "ball", "spring"]
 		findfirst(isequal(scenario), scenario_order)
@@ -684,7 +701,8 @@ comparison_plot = let
 			"$(case.adj_target) $(case.scenario) ($(case.condition))"
 		end
 		
-		plot_case_comparison(case,
+		plot_case_comparison(case, speaker_model, chain,
+			condition_blind = condition_blind,
 			title = name, legend = nothing,
 			titlefontsize = 12,
 			guidefontsize = 9,
@@ -694,7 +712,8 @@ comparison_plot = let
 	subplots = plot(plots..., layout = (4,3), size = (1000, 900))
 	
 	legendplot = plot_case_comparison(
-		last(cases_overview),
+		last(cases_overview), speaker_model, chain, 
+		condition_blind = condition_blind,
 		xlims = (-10, -5),
 		grid = false,
 		showaxis = false,
@@ -709,10 +728,27 @@ comparison_plot = let
 	)
 end
 
+# ╔═╡ a1565fa6-08d1-411c-8779-3d7c6d83f7af
+comparison_plot_composite = make_comparison_plot(model.CompositeModel, chains_composite)
+
+# ╔═╡ c6b1be4b-0471-49c4-91ad-cb5e0a084a95
+comparison_plot_vague = make_comparison_plot(model.VagueModel, chains_vague)
+
+# ╔═╡ 5632c70f-6dc1-412a-8564-562557244d41
+comparison_plot_conditionblind = make_comparison_plot(model.VagueModel, chains_noconditions, condition_blind = true)
+
 # ╔═╡ 002fb827-a54c-41c4-86e5-18dbee13d96d
 if "figures" ∈ readdir(root)
-	savefig(comparison_plot, paths[:figures] * "semantic_model_comparison.pdf")
-	md"Figure saved!"
+	savefig(comparison_plot_composite, 
+		paths[:figures] * "semantic_model_comparison_composite.pdf")
+	
+	savefig(comparison_plot_vague, 
+		paths[:figures] * "semantic_model_comparison_vague.pdf")
+	
+	savefig(comparison_plot_conditionblind, 
+		paths[:figures] * "semantic_model_comparison_conditionblind.pdf")
+	
+	md"Figures saved!"
 end
 
 # ╔═╡ 6ce1d407-b9b7-4799-8357-7a8b8917e55d
@@ -805,6 +841,7 @@ P_evidence_composite / P_evidence_vague
 # ╠═33f61e3d-24b2-4e78-b149-75fb96d2cb4b
 # ╠═d022e51e-1eae-4797-8f99-f89ba66d45b6
 # ╟─503660b8-28c1-4aa3-99fe-fdfc2002eeb0
+# ╠═c0213787-dd06-4e05-bf60-534b7b7794b1
 # ╠═d0d06901-2854-4d2c-b54f-4c98905a5f60
 # ╠═96e20e62-6fc3-48a3-8969-826995ba21e6
 # ╠═b5ea6e8b-b1de-4ed4-8533-8571a5cf2062
@@ -813,10 +850,13 @@ P_evidence_composite / P_evidence_vague
 # ╠═0be598ee-5a98-4a8a-9f16-370f62289369
 # ╟─40028cea-72cb-45b1-b12e-1950bab1e046
 # ╠═dd797a0b-47c2-4d2c-ac83-b877e9cb32dc
-# ╠═67b82a4a-31ad-410d-9f93-1defacb70ae9
 # ╠═67755e76-51a9-4356-9667-c11703fec270
+# ╠═d1440025-dd2d-42dc-8f57-2a69db7bc58c
 # ╠═bc0e77d6-4b11-44a4-a909-77d15e411ac9
+# ╠═3eb07cce-4e1d-4cf1-b4b6-5665c66204ac
 # ╠═a1565fa6-08d1-411c-8779-3d7c6d83f7af
+# ╠═c6b1be4b-0471-49c4-91ad-cb5e0a084a95
+# ╠═5632c70f-6dc1-412a-8564-562557244d41
 # ╠═002fb827-a54c-41c4-86e5-18dbee13d96d
 # ╟─6ce1d407-b9b7-4799-8357-7a8b8917e55d
 # ╟─5d8f8f9f-b4e5-4d13-8025-04024881efab
