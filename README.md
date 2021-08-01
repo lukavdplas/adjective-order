@@ -1,16 +1,24 @@
 # Adjective order
 
-This repository contains my ongoing work for my master thesis at Utrecht University.
+This repository contains my work for my master thesis at Utrecht University.
+
+✨ [go to the the github page of this repository](https://lukavdplas.github.io/adjective-order/) ✨
 
 ### What is this about?
 
-I will include an abstract of my thesis here once I have written one 🙃
+_Abstract of my thesis:_
 
-Quick explanation: in my thesis I look at people's preferences for the order of adjectives: for example, do you say "big expensive TV" or "expensive big TV"? In particular, I am conducting experiments to see if this preference is influenced by the context.
+This study investigates the order of English adjective clusters (e.g. _big expensive TV_ vs. _expensive big TV_). Previous research has established that the subjectivity of the adjective is a good predictor for its preferred position, and provided a theoretical motivation for this preference, but has not directly tested a causal link.
 
-There is some work suggesting that adjective order preferences are predicted by the subjectivity of each adjective. Subjectivity means that people can disagree about whether the adjective applies to an object, without either of them being wrong. 
+This study approaches the relationship between the subjectivity and order of adjectives from an empirical perspective, by setting up an experiment that manipulates the subjectivity of adjectives by presenting different contexts. I then investigate whether this context has an effect on adjective order preference.
 
-In my experiments, participants see a selection of objects of different sizes. The idea is that some distributions will provide a clear division into a "big" and "small" category, providing a more objective sense of what these words mean. This context may influence where someone places an adjective like "big" or "long".
+Three experiments are conducted, which take a similar approach. The experiments focus on scalar adjectives and present participants with different types of prior distributions, to achieve different levels of uncertainty about the interpretation of the adjective. The effect of this manipulation on subjectivity is verified in a semantic judgement task, by considering inter-subject disagreement and participants' self-reported confidence.
+
+Within this context, adjective order preference is investigated using an acceptability judgement task. This task presents sentences containing adjective clusters, allowing a comparison between the acceptability of different orders.
+
+The results indicate that the context can effectively influence the subjectivity of the adjective. However, there is no evidence that this affects preferences for adjective order. The results show some expected order preferences, but no significant effect of context.
+
+These results suggest that adjective order preference is not sensitive to subtle contextual variation. Further research may reveal whether adjective order is completely independent of context, or whether the distinctions in this experiment are too subtle to detect.
 
 ### What is in this repository?
 
@@ -24,7 +32,12 @@ The [experiment](./experiment) directory has a subdirectory for each experiment.
 
 Each experiment folder contains some code to process and inspect the results. There is also a subdirectory "materials" with information on stimuli and questions, and a subdirectory "results" with the results.
 
-The [modelling](./modelling) directoy contains some of the more complicated analysis steps, but it's still kind of a mess.
+The [modelling](./modelling) directory contains code used for analysis. It contains the code used to calculate disagreement potential, and the following subdirectories:
+
+* [modelling/linear_model](./modelling/linear_model) mainly contains the statistical models to investigate significant factors on acceptability judgements.
+* [modelling/order_model](./modelling/order_model) contains the model of adjective order preference.
+* [modelling/threshold_model](./modelling/threshold_model) contains the semantic model.
+* [modelling/results](./modelling/results) contains various output files.
 
 ### How do I view or run the code?
 
