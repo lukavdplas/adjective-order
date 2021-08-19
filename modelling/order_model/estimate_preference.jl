@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.8
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -38,8 +38,12 @@ end
 paths = Dict(
 	:all_results => root * "/modelling/results/results_with_disagreement.csv",
 	:export => root * "/modelling/results/relative_judgements.csv",
-	:figures => root * "/figures/"
+	:figures => root * "/figures/",
+	:presentation_figures => root * "/presentation/figures/"
 )
+
+# ╔═╡ 97033e82-8d7a-4202-b8e5-08d741b90394
+presentation_maxsize = (650, 320)
 
 # ╔═╡ 44b4cf10-7b86-4e13-95ec-2ab825f7b2a3
 all_results = CSV.read(paths[:all_results], DataFrame)
@@ -72,6 +76,9 @@ function disagreement_potential(adjective, item)
 		0.0
 	end
 end
+
+# ╔═╡ cd58b3fd-a128-4256-b0db-5e8e2352c25e
+names(all_results)
 
 # ╔═╡ 76c2ed8b-a354-4c70-819a-410f968d85d0
 md"""### Corpus data
@@ -142,7 +149,8 @@ relative_judgements = let
 			datarow = participant_data[1:1, [
 					:experiment, :participant, :condition,
 					:scenario, :adj_target, :adj_secondary,
-					:adj_secondary_type, :confidence_on_semantic
+					:adj_secondary_type, :confidence_on_semantic,
+					:disagreement_on_adj_target, :disagreement_on_adj_secondary
 				]]
 			
 			#add difference and mean to data
@@ -296,19 +304,37 @@ end
 md"### By type of secondary adjective"
 
 # ╔═╡ 06e8e659-314b-4d06-8f78-9e2c08c9ff1b
-plot_preference(:adj_secondary_type, ["absolute", "scalar"], relative_judgements,
+secondary_type_plot = plot_preference(:adj_secondary_type, ["absolute", "scalar"], relative_judgements,
 	xlabel = "secondary adjective type",
 	plotype = :bar
 )
+
+# ╔═╡ 912a7297-1a09-40d0-9ea6-53996c43e0e1
+let
+	p = plot(secondary_type_plot; size = (400, presentation_maxsize[2]))
+	
+	savefig(p,
+		paths[:presentation_figures] * "order_pref_by_secondary_type.svg"
+	)
+end
 
 # ╔═╡ 96eadf44-7d94-46c5-a8ef-6724c927e48d
 md"### By condition"
 
 # ╔═╡ 223480da-0988-436a-a37e-213dee964454
-plot_preference(:condition, ["bimodal", "unimodal"], relative_judgements,
+condition_plot = plot_preference(:condition, ["bimodal", "unimodal"], relative_judgements,
 	xlabel = "condition",
 	plotype = :bar
 )
+
+# ╔═╡ d865e175-6765-4bd5-a4e7-3f7d9d641737
+let
+	p = plot(condition_plot; size = (400, presentation_maxsize[2]))
+	
+	savefig(p,
+		paths[:presentation_figures] * "order_pref_by_condition.svg"
+	)
+end
 
 # ╔═╡ 0d166931-3e23-441b-b985-f6e91a85eb7f
 let
@@ -359,6 +385,16 @@ preference_by_subjectivity = let
 	)
 end
 
+# ╔═╡ 0245a16b-6da2-45b1-9671-476604065695
+let
+	p = plot(preference_by_subjectivity;
+		size = (presentation_maxsize[1], 290), aspect_ratio = 0.13)
+	
+	savefig(p, 
+		root * "/presentation/figures/order_pref_by_subjectivity.svg"
+	)
+end
+
 # ╔═╡ cc008e68-6456-4193-ada7-7897162ea111
 if "figures" ∈ readdir(root)
 	savefig(preference_by_subjectivity, 
@@ -389,7 +425,7 @@ preference_by_adj_pair = let
 	end
 	
 	plot_preference(:adj_pair, adj_pairs, data_with_adj_pair,
-		xlabel = "ratio of response",
+		xlabel = "ratio of responses",
 		seriestype = :bar,
 		orientation = :horizontal,
 		ylabel = "adjectives"
@@ -401,6 +437,15 @@ if "figures" ∈ readdir(root)
 	savefig(preference_by_adj_pair, 
 		paths[:figures] * "preference_by_adjective_pair.pdf")
 	md"Figure saved!"
+end
+
+# ╔═╡ d5859881-16a5-4ac9-92ae-e42ab8a0007d
+let
+	p = plot(preference_by_adj_pair;
+		size = (presentation_maxsize[1], 290), aspect_ratio = 0.04)
+	
+	savefig(p,
+		paths[:presentation_figures] * "order_pref_by_adjective_pair.svg")
 end
 
 # ╔═╡ 39ccdc36-7c19-407c-a1ed-be0d424405f3
@@ -430,13 +475,81 @@ if "figures" ∈ readdir(root)
 	md"Figure saved!"
 end
 
+# ╔═╡ a3a10afb-1872-413d-b1a1-255a5a4536f6
+let
+	x_values = filter(!ismissing, relative_judgements.corpus_preference)
+	x_values = round.(x_values, digits = 1)
+	
+	ratio = 1 / (maximum(x_values) - minimum(x_values))
+	
+	p = plot(corpus_plot;
+		size = (presentation_maxsize[1], 290), aspect_ratio = ratio)
+	
+	savefig(p,
+		paths[:presentation_figures] * "order_pref_by_corpus_freq.svg")
+end
+
+# ╔═╡ 2eb3da98-f276-4d84-bfc9-6281699d92b9
+md"### By condidence rating on target"
+
+# ╔═╡ 103e6f38-a325-4e8a-a680-05af49fa7aed
+confidence_plot = plot_preference(:confidence_on_semantic, 2:5,
+	relative_judgements,
+	xlabel = "confidence on semantic task",
+	seriestype = :bar
+)
+
+# ╔═╡ 0db341c7-234f-4e36-9a67-e24e421629d3
+let
+	p = plot(confidence_plot, size = (500, presentation_maxsize[2]))
+	
+	savefig(p,
+		paths[:presentation_figures] * "order_pref_by_confidence.svg")
+end
+
+# ╔═╡ b92be1b9-556f-4381-bbdf-c141d2e0003d
+md"### By disagreement on target"
+
+# ╔═╡ 1c55f8bf-3258-41b6-854b-0d3ae76d67a5
+target_disagreement_values = let
+	values = filter(!ismissing, relative_judgements.disagreement_on_adj_target)
+	(sort ∘ unique)(values)
+end
+
+# ╔═╡ 7f35d271-2d38-49b7-932e-4efed601c01e
+disagreement_plot = let
+	digits = 2
+	
+	data = copy(relative_judgements)
+	data.disagreement_on_adj_target = round.(data.disagreement_on_adj_target, 
+		digits = digits)
+	
+	values = round.(target_disagreement_values, digits = digits)
+	
+	plot_preference(:disagreement_on_adj_target, values,
+		data,
+		xlabel = "disagreement on target adjective",
+		seriestype = :line
+	)
+end
+
+# ╔═╡ 75a4a84d-4693-4056-a4cc-489fc0bd4c84
+let
+	p = plot(disagreement_plot, size = presentation_maxsize, aspect_ratio = 0.06)
+	
+	savefig(p,
+		paths[:presentation_figures] * "order_pref_by_disagreement.svg")
+end
+
 # ╔═╡ Cell order:
 # ╠═8b8a92c6-d032-11eb-0137-afbbf72b726d
 # ╠═aaa9134a-c7b8-486a-b7f8-62f9450c4fd2
+# ╠═97033e82-8d7a-4202-b8e5-08d741b90394
 # ╠═44b4cf10-7b86-4e13-95ec-2ab825f7b2a3
 # ╟─cbeb0915-0f02-44f1-a3e7-a147a9fd2992
 # ╟─6a370a3a-3680-45eb-91bf-1f0105fb76bb
 # ╠═c548a0b4-7a06-4c8c-81b3-0210c8922315
+# ╠═cd58b3fd-a128-4256-b0db-5e8e2352c25e
 # ╠═5ab54f01-ea3d-40df-bceb-a953d2b9144f
 # ╠═f1d76242-e88d-4144-a206-912ee6f27c19
 # ╟─76c2ed8b-a354-4c70-819a-410f968d85d0
@@ -453,17 +566,29 @@ end
 # ╟─67ecf720-a4bd-41e8-adbe-230b34024fd0
 # ╟─a732fdce-9182-4b64-a1e0-4b8b1b27a7bb
 # ╟─3c64c464-8a4d-411a-9c75-f9c670716003
-# ╟─06e8e659-314b-4d06-8f78-9e2c08c9ff1b
+# ╠═06e8e659-314b-4d06-8f78-9e2c08c9ff1b
+# ╠═912a7297-1a09-40d0-9ea6-53996c43e0e1
 # ╟─96eadf44-7d94-46c5-a8ef-6724c927e48d
 # ╟─223480da-0988-436a-a37e-213dee964454
+# ╠═d865e175-6765-4bd5-a4e7-3f7d9d641737
 # ╟─0d166931-3e23-441b-b985-f6e91a85eb7f
 # ╟─61010c9e-63d7-4999-80ca-7f2eb35fde32
 # ╠═b181392f-027c-4817-b52e-af37174af9cb
 # ╠═a45af2ed-3f57-4176-a807-6db2b29eafcd
+# ╠═0245a16b-6da2-45b1-9671-476604065695
 # ╠═cc008e68-6456-4193-ada7-7897162ea111
 # ╟─ec22046e-d17e-4bf5-9424-62e53276a951
 # ╠═0cebbb6d-3016-4e52-9fa9-3a74a326ae3b
 # ╠═79e16b94-b17a-4bd1-b20c-efb631713531
+# ╠═d5859881-16a5-4ac9-92ae-e42ab8a0007d
 # ╟─39ccdc36-7c19-407c-a1ed-be0d424405f3
 # ╠═65ba0667-cc6d-4d27-9a01-aaf45d9d4b10
 # ╠═c14c94e7-5a62-42ea-8ca9-6fc41c67539b
+# ╠═a3a10afb-1872-413d-b1a1-255a5a4536f6
+# ╟─2eb3da98-f276-4d84-bfc9-6281699d92b9
+# ╠═103e6f38-a325-4e8a-a680-05af49fa7aed
+# ╠═0db341c7-234f-4e36-9a67-e24e421629d3
+# ╟─b92be1b9-556f-4381-bbdf-c141d2e0003d
+# ╠═1c55f8bf-3258-41b6-854b-0d3ae76d67a5
+# ╟─7f35d271-2d38-49b7-932e-4efed601c01e
+# ╠═75a4a84d-4693-4056-a4cc-489fc0bd4c84
