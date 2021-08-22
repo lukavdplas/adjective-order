@@ -1,9 +1,9 @@
 adj_target,scenario,condition,scale,mean_disagreement
 big,tv,bimodal,size,0.13895089285714285
 big,tv,unimodal,size,0.21251475796930344
+long,couch,bimodal,size,0.12514757969303428
+long,couch,unimodal,size,0.25223214285714285
 expensive,tv,bimodal,price,0.20926339285714285
 expensive,tv,unimodal,price,0.2384887839433294
 expensive,couch,bimodal,price,0.1511216056670602
 expensive,couch,unimodal,price,0.09933035714285714
-long,couch,bimodal,size,0.12514757969303428
-long,couch,unimodal,size,0.25223214285714285

@@ -23,7 +23,9 @@ end
 # ╔═╡ da6256f6-85a5-4c78-adcb-b56f4a1e79b9
 paths = Dict(
 	:all_results => root * "/modelling/results/results_with_disagreement.csv",
-	:presentation_figures => root * "/presentation/figures/"
+	:presentation_figures => root * "/presentation/figures/",
+	:disagreement_exp2 => root * "/modelling/results/disagreement_exp2.csv",
+	:disagreement_exp3 => root * "/modelling/results/disagreement_exp3.csv",
 )
 
 # ╔═╡ d01aba57-cd22-44a2-88ac-b7fccadaddb0
@@ -39,6 +41,73 @@ confidence_results = let
 	df = all_results[all_results.item_type .== "confidence", :]
 	df.response = parse.(Int64, df.response)
 	df
+end
+
+# ╔═╡ eae41473-ea10-438d-b6d4-8d0970a43ba0
+md"## Disagreement potential"
+
+# ╔═╡ acbe5c2e-f408-4660-984f-3a96076e754a
+disagreement_results = let
+	results_exp2 = CSV.read(paths[:disagreement_exp2], DataFrame)
+	
+	results_exp3 = CSV.read(paths[:disagreement_exp3], DataFrame)
+	
+	vcat(results_exp2, results_exp3)
+end
+
+# ╔═╡ 66045c71-82cb-4269-96e5-a404f3c40732
+disagreement_plot = let
+	res = copy(disagreement_results)
+	
+	res.label = map(eachrow(disagreement_results)) do row
+		if row.adj_target == "expensive"
+			"expensive"
+		else
+			if row.condition == "bimodal"
+				"big/long\nbimodal"
+			else
+				"big/long\nunimodal"
+			end
+		end
+	end
+	
+	label_index(label) = if label == "big/long\nbimodal"
+		1
+	elseif label == "big/long\nunimodal"
+		2
+	else
+		3
+	end
+	
+	pal = palette([PlotThemes.wong_palette[1], PlotThemes.wong_palette[2], PlotThemes.wong_palette[3]])
+	
+	p = scatter(
+		res.label, res.mean_disagreement, 
+		xlabel = "adjective + condition",
+		ylabel = "disagreement potential",
+		legend = nothing,
+		markersize = 5,
+		marker_z = label_index.(res.label), markercolor = pal,
+		xlims = (00,3), ylims = (0.08, 0.28),
+	)
+	
+	summary = combine(groupby(res, :label), 
+		:mean_disagreement => mean => "disagreement_potential")
+	
+	plot!(p,
+		summary.label, summary.disagreement_potential,
+		linecolor = :black, linestyle = :dash,
+	)
+end
+
+# ╔═╡ e7e3b0ef-4c38-4898-aab6-0c341ae5ebd4
+let
+	p = plot(disagreement_plot, size = (320,320))
+	
+	savefig(p, 
+		paths[:presentation_figures] * "disagreement_combined.svg")
+	
+	md"Figure saved!"
 end
 
 # ╔═╡ e86f90cd-f63c-48f9-aca3-2e5fbd1685df
@@ -174,6 +243,10 @@ end
 # ╠═905475a9-dfd7-4817-a5a7-a3e34a54a883
 # ╟─4a809f3d-f6a7-45d6-91fb-fba9551c0440
 # ╠═b85457ba-17d7-4f18-923c-0e710d19e60e
+# ╟─eae41473-ea10-438d-b6d4-8d0970a43ba0
+# ╠═acbe5c2e-f408-4660-984f-3a96076e754a
+# ╠═66045c71-82cb-4269-96e5-a404f3c40732
+# ╠═e7e3b0ef-4c38-4898-aab6-0c341ae5ebd4
 # ╟─e86f90cd-f63c-48f9-aca3-2e5fbd1685df
 # ╠═bdc215d6-6c6d-45eb-8f85-a2a9f7de462d
 # ╟─010ce797-84b9-4919-84c2-508217a5433f

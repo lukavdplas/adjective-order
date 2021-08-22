@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.14.8
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -301,6 +301,16 @@ let
 	res, pvalue(res, tail = :right)
 end
 
+# ╔═╡ 6de56bb8-08b7-411e-a7bb-b436c140a9d1
+md"**Both experiments**"
+
+# ╔═╡ cf463d39-ef61-4d33-8173-20c1837a193d
+let
+	all_data = vcat(item_disagreement_exp2, item_disagreement_exp3)
+	res = test_condition_on_disagreement(all_data, ["big", "long"])
+	res, pvalue(res, tail = :right)
+end
+
 # ╔═╡ f7361ccc-c648-499b-93e5-a92f59b97d32
 md"""
 ## Disagreement and confidence
@@ -522,6 +532,8 @@ CSV.write("results/disagreement_exp3.csv", disagreement_results_exp3)
 # ╠═10de0330-8ea4-4071-876b-1a767f2adc01
 # ╠═c2828053-d8b5-4d13-8873-6a7a74dfef05
 # ╠═b7203af3-5712-4df6-bbef-830696f9d702
+# ╟─6de56bb8-08b7-411e-a7bb-b436c140a9d1
+# ╠═cf463d39-ef61-4d33-8173-20c1837a193d
 # ╟─f7361ccc-c648-499b-93e5-a92f59b97d32
 # ╠═262544b4-9ed2-4eec-9998-5b1049046f08
 # ╟─e21ffb39-ebc7-4da6-93ac-67411448e43e

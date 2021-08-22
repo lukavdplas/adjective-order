@@ -63,6 +63,10 @@ md"""
 
 # ╔═╡ 9b4fbf82-44a9-4d1e-9edd-9a09a633e48f
 md"""
+Do you say...
+* *big plastic bag* or *plastic big bag*?
+* *big heavy bag* or *heavy big bag*?
+
 Intuitions about adjective order are difficult to describe
 
 Semantic grouping (Dixon, 1982):
@@ -70,26 +74,11 @@ Semantic grouping (Dixon, 1982):
 $\langle \textit{value}, \textit{dimension}, \textit{physical property}, \textit{speed}, \textit{human propensity}, \textit{age}, \textit{colour} \rangle$
 """
 
-# ╔═╡ 21f437c3-73ee-4641-a6ad-c01cd74a9763
-md"""
-## A comparison
-"""
-
-# ╔═╡ db216863-3d32-4d2c-ace8-fa4212f129e8
-md"""
-## A comparison
-"""
-
-# ╔═╡ fefe4c1b-c857-4bd5-b434-bfac3d723613
-md"""
-## A comparison
-"""
-
 # ╔═╡ 77af885c-f608-42f2-86f6-ebaf3f6d176a
 md"""
 ## Adjective order: the next level ✨
 
-So what is the underlying factor in adjective order? And why?
+Is there an underlying factor to adjective order?
 
 It may be **subjectivity**
 """
@@ -98,21 +87,38 @@ It may be **subjectivity**
 md"""
 ## Subjectivity
 
-Explain concept: faultless disagreement
+Subjectivity: **potential for disagreement**
+
+Caused by:
+* personal taste (*beautiful*)
+* vagueness (*big*)
+* ...
 """
 
 # ╔═╡ 8ddcc42c-d8d1-4d78-a2e6-7ec006d0e2e4
 md"## Why subjectivity?"
 
 # ╔═╡ 89612292-abab-4ecf-b670-898e630c6b4c
-md"Explain reasoning"
+md"""
+Subjectivity is a problem for **reference resolution**
+
+Compare:
+
+$[\textit{big} \, [\textit{plastic} \; \textit{bag}]]$
+
+vs.
+
+$[\textit{plastic} \, [\textit{big} \; \textit{bag}]]$
+
+More efficient to first combine the adjective that is more objective (Scontras et al.,  2019)
+"""
 
 # ╔═╡ 0d7dce07-de21-4dbf-918d-7329bd7fae0f
 md"## Current research"
 
 # ╔═╡ 7490a3d8-b4a8-4bc3-8f31-db877fd4b1a0
 md"""
-Subjectivity and order are measured separately
+Subjectivity and order are measured separately (e.g. Scontras et al., 2017)
 
  $\rightarrow$ no causal link
 
@@ -147,7 +153,9 @@ To explain how, we need some theory...
 md"""
 ## Vague adjectives
 
-What are vague adjectives...
+Vagueness: **gradient interpretation**
+
+Scalar adjectives (*big*, *long*, *expensive*): suitable for modelling
 """
 
 # ╔═╡ e3db09c7-effc-446e-8868-955d2543805d
@@ -170,7 +178,7 @@ begin
 		p = plot(
 			xlabel = "size",
 			ylabel = "density",
-			size = (600, 280),
+			size = (500, 250),
 			legend = :right,
 		)
 		
@@ -264,8 +272,6 @@ make_gradable_plot(0.0)
 # ╔═╡ 0012e487-6e13-4b24-a805-8a815a1aa74b
 md"""
 ## The prior distribution
-
-Explain unimodal/bimodal setup
 """
 
 # ╔═╡ 421b73e5-2ec2-4cd1-87f1-d347bc11c18b
@@ -284,6 +290,28 @@ md"""
 ## Design
 """
 
+# ╔═╡ fcbf9525-abed-4343-a641-039000cc9b01
+md"3 experiments"
+
+# ╔═╡ 331f2e9c-e94e-47a6-8213-d5e22ada4e48
+md"""
+**Conditions**
+
+* Unimodal distribution
+* Bimodal distribution
+"""
+
+# ╔═╡ 56c97bea-8779-4a81-b5eb-e69f020cb23f
+md"""
+**Target adjectives**
+
+* *big*
+* *long*
+"""
+
+# ╔═╡ 72644945-b5e6-4c43-9c23-bd4a49166a43
+md"## Design"
+
 # ╔═╡ a66c5e1e-e9e0-4cf1-bafa-8e72a49af8c9
 md"""
 **Scenarios**
@@ -297,86 +325,77 @@ md"""
 # ╔═╡ 5641fd17-a25e-4762-85b0-7c398be42eda
 md"Recruitment through Prolific"
 
+# ╔═╡ f4804a28-f27e-44b7-84ac-186455eace95
+md"## Procedure"
+
+# ╔═╡ 017acb94-2675-4225-b34f-ee87ae241dcb
+md"""
+Online survey
+
+Per scenario:
+"""
+
 # ╔═╡ bc65e167-8238-4b00-8999-754ee4fc5a2b
 md"""
-## Stimuli
+## Scenario introduction
 """
 
 # ╔═╡ fac04ee7-2280-47cd-a00b-582ca37c84ab
 md"""
-14 objects per scenario/condition
+14 objects per scenario
+
+One version for each condition
 
 Objects vary in
-* **price** (*expensive*)
 * **size** (*big*) or **length** (*long*)
+* **price** (*expensive*, *cheap*)
 """
 
 # ╔═╡ 28ace618-9f7b-4f43-91e9-57af1c4da443
 md"""
-## Stimuli
+## Scenario introduction
 """
 
 # ╔═╡ dbeb2823-479f-4d63-881f-5d5f6b194e2d
 md"""
-## Stimuli
+## Scenario introduction
 """
 
 # ╔═╡ 1e3a799c-0aec-4fe5-a15a-ee077d0be747
-md"## Stimuli"
+md"## Scenario introduction"
 
 # ╔═╡ aec667ad-d4cf-4686-a531-75defa6fe9ed
-md"## Stimuli"
-
-# ╔═╡ 38d25b49-26ae-4017-9a63-bf4a9994c0b6
-md"""
-## Stimuli
-"""
-
-# ╔═╡ c2982eb3-1e3a-4743-b81f-e054e03c5336
-md"Say something about distributions"
-
-# ╔═╡ e25248a4-8e71-40d1-8d8a-7f596d93b656
-md"## Stimuli"
-
-# ╔═╡ c6112f98-fd00-412d-b5aa-a55326a318b8
-md"""
-Sentences to test adjective order:
-
-* *I saw a big expensive TV over there.*
-* *I saw an expensive big TV over there.*
-
-Target (*big*/*long*) is combined with
-* 2 scalar adjectives (*expensive*, *cheap*)
-* 2 absolute adjectives (*leather*, *refurbished*, *striped*...)
-
- $\rightarrow$ 8 sentences per scenario
-"""
-
-# ╔═╡ e532862a-bc69-413b-889d-5bdac5ed7868
-md"## Stimuli"
-
-# ╔═╡ 2c5725c7-5666-45c0-bf01-a03089c5dc76
-md"""
-Filler sentences: 10 per scenario
-
-* **Acceptable**  $\rightarrow$ *There is an expensive TV over there.*
-
-* **Questionable** $\rightarrow$ *Over there I saw an expensive TV.*
-
-* **Unacceptable**  $\rightarrow$ *That TV is cheap very.*
-
-
-"""
-
-# ╔═╡ 247ce6ec-7719-4618-8946-612a678720e0
-md"""## Procedure"""
-
-# ╔═╡ df667e95-d9ef-4fcc-bedf-0a88eec9f35b
 md"## Scenario introduction"
 
 # ╔═╡ b862bafe-f46c-4cb6-ade6-9dca5767ef19
 md"""
 ## Semantic judgement task
+"""
+
+# ╔═╡ 8c874d10-3d9b-4a6d-8833-41b63bf27a4e
+md"## Semantic judgement task"
+
+# ╔═╡ 7c57df4a-3c99-437c-a25a-d520f5a38a1d
+html"""
+<style>
+table.Likert {
+	border: none;
+}
+</style>
+
+How confident did you feel about your selection?
+
+<table class="Likert">
+<tr>
+	<td>Very doubtful</td>
+	<td><input type="radio"></td>
+	<td><input type="radio"></td>
+	<td><input type="radio"></td>
+	<td><input type="radio"></td>
+	<td><input type="radio"></td>
+	<td>Very confident</td>
+</tr>
+</table>
 """
 
 # ╔═╡ 31e86552-cef8-419c-8edb-7a74b2dba3f2
@@ -428,11 +447,27 @@ table.Likert {
 </table>
 """
 
+# ╔═╡ fc215efc-ced0-4114-9291-8ae2ba3663ba
+md"## Acceptability judgement task"
+
+# ╔═╡ c6112f98-fd00-412d-b5aa-a55326a318b8
+md"""
+Sentences to test adjective order:
+
+* *I saw a big expensive TV over there.*
+* *I saw an expensive big TV over there.*
+
+Target (*big*/*long*) is combined with
+* 2 scalar adjectives (*expensive*, *cheap*)
+* 2 absolute adjectives (*leather*, *refurbished*, *striped*...)
+
+ $\rightarrow$ 8 sentences per scenario
+
+In addition: 10 fillers per scenario
+"""
+
 # ╔═╡ 696635e9-cb83-4900-9046-c427d6c30b9d
 md"""# Results: semantic task"""
-
-# ╔═╡ 1561e1c6-b2c0-4500-824c-a75a6ced4922
-md"## Semantic judgements"
 
 # ╔═╡ 1b6490d5-a0bb-4ea1-ac2f-2571d2392ac8
 md"## Confidence ratings"
@@ -446,9 +481,8 @@ Subjectivity is described as the *potential for disagreement*
 
 If we would match up two random participants, how likely is it that they disagree on their judgement for an object?
 
-$p_{disagree} =  1 - (p_{\textit{both true}} + p_{\textit{both false}})$
-
-$p_{disagree} =  1 - (p_{true} \cdot p_{true} + p_{false} \cdot p_{false})$
+$p_{\textit{disagree}} = 1 - (p_{\textit{both true}} +p_{\textit{both false}})$
+$= 1 - ({p_{\textit{true}}}^2 + {p_{\textit{false}}}^2)$
 
 More mixed responses mean higher subjectivity!
 """
@@ -456,12 +490,78 @@ More mixed responses mean higher subjectivity!
 # ╔═╡ baad54b7-b944-4289-8ca5-72852c06020b
 md"## Potential for disagreement"
 
-# ╔═╡ 6df2e853-2a25-4cb8-bb86-e4b3990f7d1a
-md"Plot of disagreement potential"
+# ╔═╡ ecdd00f4-4dae-407d-8072-ae9f3da1a4a3
+md"## Semantic model"
+
+# ╔═╡ 9711a1e4-094a-4674-a6c1-d512a3e161dd
+md"""
+A model of interpretation
+
+Original model: Goodman & Frank (2016)
+
+Two adaptations:
+* Mixing in group-level thinking
+* Ignoring condition
+"""
 
 # ╔═╡ 84fde6a3-a9af-44f0-943c-f80a9712a274
 md"""
-## Semantic model
+## Semantic model: original model
+"""
+
+# ╔═╡ 5dd898a8-e8d1-4846-8d52-d212a436d3d6
+md"## Semantic model: composite model"
+
+# ╔═╡ 45b72705-7ed3-4ace-aa62-0cd447d0fd53
+md"""Issues:
+* *Practical*: no parameter for between-group distinction
+* *Conceptual*: thinks on level of items, not groups
+
+Solution:
+
+Mix this item-level model with a group-level model
+
+For each object...
+* Determine what cluster it belongs to
+* Determine if that *cluster* is big/long/etc
+"""
+
+# ╔═╡ efbcc42b-4238-4e31-a6ee-fb98749a3fbc
+md"## Semantic model: composite model"
+
+# ╔═╡ 92392332-1321-41fd-88bd-9c6daf33daac
+md"## Semantic model: condition-blind model"
+
+# ╔═╡ 98581c36-eac9-487c-9127-0604fed057ce
+md"""
+Do people notice the bimodal/unimodal distinction?
+
+The condition-blind model always believes in the same normal distribution, regardless of condition
+"""
+
+# ╔═╡ c5c9b6ac-df6b-4b83-adce-115cc0ef3b5e
+md"## Semantic model: condition-blind model"
+
+# ╔═╡ df8aa262-f3a8-4cfe-af8e-8aa8bd877c9d
+md"## Semantic model: comparison"
+
+# ╔═╡ 717e2b1a-effd-49fa-af32-414c9ec0acc5
+md"""
+Paramaters estimated with MCMC sampling
+
+Evaluated on posterior probability of data
+
+Performance: *condition-blind > composite > original*
+"""
+
+# ╔═╡ 34cab4b3-7b3d-45e1-9040-503ecd6e1c16
+md"## Semantic model: comparison"
+
+# ╔═╡ 97647cf0-ec8e-4e0e-b481-24683b2fd99a
+md"""
+Condition-blind model shows best performance, but has conceptual issues
+
+May indicate that participants do not base judgements on stimuli
 """
 
 # ╔═╡ 5dce214d-5d0d-4134-a69d-aecd4450bb2b
@@ -472,28 +572,14 @@ md"""
 # ╔═╡ 56ffe1c0-ef3b-4ecb-9ff3-acf91199a02d
 md"## Effect of condition"
 
-# ╔═╡ c979f17f-5437-4c7c-af1c-b351bee84f84
-md"## Effect of scalar vs. absolute adjectives"
-
-# ╔═╡ ab3292bf-cf74-411d-a6a7-6c5bdeebf83f
-md"## Effect of confidence"
-
-# ╔═╡ 792697c0-e231-47e4-9793-0f4b44c4f68a
-PlutoUI.LocalResource("./figures/order_pref_by_confidence.svg")
-
 # ╔═╡ 2b37275e-645e-467b-8376-14960f3e7dfa
-md"## Effect of disagreement potential"
+md"## Disagreement potential and confidence"
 
 # ╔═╡ f5721070-6141-4abe-b231-484ce50ce8d8
-PlutoUI.LocalResource("./figures/order_pref_by_disagreement.svg")
+PlutoUI.LocalResource("./figures/order_pref_by_disagreement_and_confidence.svg")
 
-# ╔═╡ 9fb57d53-3bd8-4678-9a40-413ae2507e4f
-md"""
-## Effect of relative subjectivity
-"""
-
-# ╔═╡ 10af9009-5206-4d70-8d95-1cd78a7f850a
-PlutoUI.LocalResource("./figures/order_pref_by_subjectivity.svg")
+# ╔═╡ c979f17f-5437-4c7c-af1c-b351bee84f84
+md"## Effect of scalar vs. absolute adjectives"
 
 # ╔═╡ 2f0e278b-3cba-41ae-b4f9-f57aea48c45b
 md"""## Correlation with corpus data"""
@@ -504,7 +590,7 @@ We can compare the order preferences to frequency data
 
 Data: Google Ngrams corpus (Michel et al., 2011)
 
-For each pair of adjectives, calculate a *relative frequency socre*
+For each pair of adjectives, calculate a *relative frequency score*
 
 $\textit{relative frequency} = \frac{f_{\textit{target first}} - f_{\textit{target second}}}{f_{\textit{target first}} + f_{\textit{target second}}}$
 
@@ -515,11 +601,6 @@ md"## Correlation with corpus data"
 
 # ╔═╡ 260592ea-a83b-4e32-a4e7-3e73923b0ff8
 PlutoUI.LocalResource("./figures/order_pref_by_corpus_freq.svg")
-
-# ╔═╡ 53adebc5-520b-4847-ba45-15061d5053b5
-md"""
-# Discussion
-"""
 
 # ╔═╡ 3ddb3ba9-941c-4f4e-b063-9e1663de321a
 md"## Summary of findings"
@@ -541,14 +622,28 @@ md"## Summary of findings"
 md"""
 Significant predictors of adjective order:
 * Scalar vs. absolute adjectives
-* *Big* vs. *long*
 * Corpus frequencies
 
-These match expectations, but they are all static properties
+These match expectations, but they are static
 """
 
-# ╔═╡ 1473c1e2-50d8-4d67-b2c0-ed1ebed49ef4
-md"## Issues etc"
+# ╔═╡ 53adebc5-520b-4847-ba45-15061d5053b5
+md"""
+# Discussion
+"""
+
+# ╔═╡ ebfadab6-1ad5-4fa6-bc70-fdc405e50b89
+md"## Reflection"
+
+# ╔═╡ 8699f9f8-557c-4cbb-99ce-2392f0175bc3
+md"""
+Context or prior expectations?
+* No effect of novel objects
+* Good performance of condition-blind model
+"""
+
+# ╔═╡ 1a91e8f1-ff36-48af-b3b2-2bfa13dfa3f9
+md"Acceptability judgments: task ambiguity"
 
 # ╔═╡ ff1f6e6a-581b-4ef6-b129-c14851da87da
 md"## Implications"
@@ -559,14 +654,22 @@ Why did subjectivity not affect order?
 
 💡 Subjectivity is *not the true underlying factor*
 
-💡 The effect is *fossilised*
-
 💡 The experiment is *too fine-grained*
 """
 
 # ╔═╡ f3264078-b62c-432c-b5a6-a18b630ea847
 md"""
 # Conclusion
+"""
+
+# ╔═╡ 9385aaed-a6cd-4c99-8dd3-6f5305c1a03c
+md"""
+Context affects how much interpretation varies
+
+
+No effect on adjective order
+
+Static factors can predict order preference according to expectations
 """
 
 # ╔═╡ 3ce26006-1b16-4c1a-8d38-6060b6440196
@@ -615,64 +718,6 @@ function flex(args...; kwargs...)
 		)
 end
 
-# ╔═╡ 6e8a61ec-9f2e-48cc-89a0-339e47e748ff
-flex(
-	Div(
-		md"""How do we describe the colours of a rainbow?
-		
-		**Theory 1**
-		
-		A discrete array:
-		
-		$\langle \textit{red}, \textit{orange}, \textit{yellow}, \textit{green}, \textit{blue}, \textit{indigo}, \textit{violet} \rangle$
-		""",
-		Dict("width" => "70%")
-	),
-	
-	Div(
-		html"""<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/WhereRainbowRises.jpg/800px-WhereRainbowRises.jpg" style="max-width:100%">""",
-		Dict("width" => "30%")
-	)
-)
-
-# ╔═╡ 53c9a4ce-97f2-4fb7-96d7-1f513793ae3d
-flex(
-	Div(
-		html"""<img src="https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fchapelboro.com%2Fwp-content%2Fuploads%2F2016%2F01%2Fl014-electromagnetic.png&f=1&nofb=1" style="max-width:100%">""",
-		Dict("width" => "30%")
-	),
-	
-	Div(
-		md"""
-		**Theory 2**
-		
-		Colours are sorted by *wavelength*
-		
-		Now the order is no longer arbitary!
-		""",
-		Dict("margin-left" => "2em", "width" => "70%")
-	)
-)
-
-# ╔═╡ 0c9b0860-d5ca-4fa2-99eb-d0ea37175813
-flex(
-	Div(
-		md"""
-		**Theory 3**
-		
-		Describe the *mechanism* of refraction (depends on wavelength)
-		
-		Now we can test this mechanism in an experiment!
-		""",
-		Dict("margin-right" => "2em", "width" => "70%")
-	),
-	
-	Div(
-		html"""<img src="https://upload.wikimedia.org/wikipedia/commons/e/ee/Raindrop_optics.jpg" style="max-width:100%">""",
-		Dict("width" => "30%")
-	),
-)
-
 # ╔═╡ 21a75a77-30af-4ce9-b208-988b0cbe8091
 function stimulus_with_checkbox(img_url, size, price)
 	Div(flex(
@@ -687,11 +732,25 @@ end;
 # ╔═╡ 148b9f67-6355-4cf1-a2b0-7d34b9d7407d
 flex(
 	Div(md"""
-		Confidence ratings
+		High confidence overall
+		
+		Higher confidence in bimodal condition $\;$ ($p = .003$)
 		""",
 		Dict("width" => "100%")),
 	
 	PlutoUI.LocalResource("./figures/confidence_aggregated.svg")
+)
+
+# ╔═╡ fc13ba32-064c-4df3-aeb5-8facdd8c879f
+flex(
+	Div(md"""
+		Lower disagreement in bimodal condition...
+		
+		... with exception of *big* in exp 3
+		""",
+		Dict("width" => "100%")),
+	
+	PlutoUI.LocalResource("./figures/disagreement_combined.svg")
 )
 
 # ╔═╡ 7f58bc9e-cd36-4ab1-8885-2884e2e4d2b9
@@ -704,12 +763,36 @@ flex(Div(md"""
 	""")
 )
 
+# ╔═╡ 569bc894-cdac-4b19-9cfe-6da8cfb8a0a2
+flex(Div(md"""
+		 $\lambda$: $(@bind example_λ_cp Slider(0:20:200, default=100))
+		""",
+		Dict("width" => "33%")),
+	
+	Div(md"""
+	 	$c$: $(@bind example_c_cp Slider(-0.05:0.01:0.05, default = -0.01))
+		""",
+		Dict("width" => "33%")),
+	
+	Div(md"""
+		 $\alpha$: $(@bind example_α_cp Slider(0.0:0.1:1.0, default = 0.5))
+		""")
+)
+
+# ╔═╡ 5a8005ea-b6fb-4bdf-ac95-30edadb109bc
+flex(Div(md"""
+		 $\lambda$: $(@bind example_λ_cb Slider(0:20:200, default=100))
+		""",
+		Dict("width" => "50%")),
+	Div(md"""
+	 $c$: $(@bind example_c_cb Slider(-0.05:0.01:0.05, default = -0.01))
+	""")
+)
+
 # ╔═╡ 6bc1af68-0732-41a1-8568-94a760c2049b
 flex(
 	Div(md"""
 		Similar ratings between conditions.
-		
-		Tested using cumulative link mixed model
 		
 		No interaction between order and condition ($p = .411$)
 		""",
@@ -753,6 +836,14 @@ grid([
 grid([
 		md"" md"**Experiment 1**" md"**Experiment 2**" md"**Experiment 3**" ;
 		md"Participants" md"30" md"31" md"30" ;
+	])
+
+# ╔═╡ 44d1958b-6dcf-43a9-98f5-fd3f039aba49
+grid([
+		md"" md"**Experiment 1**" md"**Experiment 2**" md"**Experiment 3**" ;
+		md"Scenario introduction" md"✔️" md"✔️" md"✔️" ;
+		md"Semantic task" md"" md"✔️" md"✔️" ;
+		md"Acceptability judgements" md"✔️" md"✔️" md"✔️" ;
 	])
 
 # ╔═╡ 0081a2a4-b130-45e7-9ff6-595d28deaeea
@@ -838,14 +929,6 @@ grid([
 			scale = "Length", margin = "1em 0em 0em 0em") ;
 	],
 )
-
-# ╔═╡ 44d1958b-6dcf-43a9-98f5-fd3f039aba49
-grid([
-		md"" md"**Experiment 1**" md"**Experiment 2**" md"**Experiment 3**" ;
-		md"Scenario" md"✔️" md"✔️" md"✔️" ;
-		md"Semantic task" md"" md"✔️" md"✔️" ;
-		md"Acceptability judgements" md"✔️" md"✔️" md"✔️" ;
-	])
 
 # ╔═╡ 29b295fa-740e-4f33-ace7-50abb932ba0b
 grid([stimulus_with_checkbox(
@@ -970,6 +1053,114 @@ end;
 # ╔═╡ 5a6be561-3d5e-4eb0-aff5-cbe75150e494
 plot_model(example_λ, example_c)
 
+# ╔═╡ d5d257ef-f2d9-4354-999d-17445cfd740e
+function plot_bimodal_model_composite(λ, c, α)
+	scale = model.example_scale_points
+	prior = model.example_bimodal
+	speaker = model.CompositeModel(λ, c, α, scale, prior)
+	
+	p_prior = plot(scale,
+		x -> pdf(prior, x),
+		legend = :none,
+		title = "prior probability",
+		ylabel = "P(degree)", xlabel = "degree",
+		fill = 0,
+		color = :black, fillcolor = 1
+	)
+	
+	θ_probs = map(scale) do x
+		if x > first(scale)
+			prev_x = x - step(model.example_scale_points)
+			model.use_adjective(x, speaker) - model.use_adjective(prev_x, speaker)
+		else
+			model.use_adjective(x, speaker)
+		end
+	end
+	
+	p_threshold = plot(scale,
+		θ_probs,
+		legend = :none,
+		title = "threshold probability",
+		ylabel = "P_θ(degree)", xlabel = "degree",
+		fill = 0,
+		color = :black, fillcolor = 1
+	)
+	
+	p_speaker = plot(scale,
+		x -> model.use_adjective(x, speaker),
+		legend = :none,
+		title = "speaker",
+		ylabel = "S(degree)", xlabel = "degree",
+		lw = 2,
+	)
+	
+	p = plot(p_speaker, p_threshold, p_prior, 
+		layout = Plots.grid(3,1, heights = [0.4, 0.4, 0.2]), 
+		size = (300, 600))
+end;
+
+# ╔═╡ f064ff09-40c9-4d3a-9e21-c2c3361cad17
+function plot_composite_model(λ, c, α)
+	p_bimodal = plot_bimodal_model_composite(λ, c, α)
+	p_unimodal = plot_unimodal_model(λ, c)
+	
+	plot(p_unimodal, p_bimodal, layout = (1,2), size = (500, 320), 
+		titlefontsize = 10, guidefontsize = 8, tickfontsize = 6)
+end;
+
+# ╔═╡ 0e27f658-968e-4652-96d4-8cfd3bb3c138
+plot_composite_model(example_λ_cp, example_c_cp, example_α_cp)
+
+# ╔═╡ b2f3d10c-66be-4ce8-b0bb-3a5e74474b64
+function plot_bimodal_model_conditionblind(λ, c)
+	scale = model.example_scale_points
+	prior = model.example_bimodal
+	prior_unim = Normal(50,10)
+	speaker = model.VagueModel(λ, c, scale, prior_unim)
+	
+	p_prior = plot(scale,
+		x -> pdf(prior, x),
+		legend = :none,
+		title = "prior probability",
+		ylabel = "P(degree)", xlabel = "degree",
+		fill = 0,
+		color = :black, fillcolor = 1
+	)
+	
+	p_threshold = plot(scale,
+		speaker.θ_probabilities,
+		legend = :none,
+		title = "threshold probability",
+		ylabel = "P_θ(degree)", xlabel = "degree",
+		fill = 0,
+		color = :black, fillcolor = 1
+	)
+	
+	p_speaker = plot(scale,
+		x -> model.use_adjective(x, speaker),
+		legend = :none,
+		title = "speaker",
+		ylabel = "S(degree)", xlabel = "degree",
+		lw = 2,
+	)
+	
+	p = plot(p_speaker, p_threshold, p_prior, 
+		layout = Plots.grid(3,1, heights = [0.4, 0.4, 0.2]), 
+		size = (300, 600))
+end;
+
+# ╔═╡ 237e136c-182c-4183-85b0-e95acb7776e6
+function plot_model_conditionblind(λ, c)
+	p_bimodal = plot_bimodal_model_conditionblind(λ, c)
+	p_unimodal = plot_unimodal_model(λ, c)
+	
+	plot(p_unimodal, p_bimodal, layout = (1,2), size = (500, 320), 
+		titlefontsize = 10, guidefontsize = 8, tickfontsize = 6)
+end;
+
+# ╔═╡ 9de156fc-bcab-462f-b563-fae5058a00ef
+plot_model_conditionblind(example_λ_cb, example_c_cb)
+
 # ╔═╡ Cell order:
 # ╟─56aa594e-41af-4475-88a3-91cb2f5e8674
 # ╟─2f35c604-99e0-11eb-2bf3-c3cdce2b370e
@@ -977,12 +1168,6 @@ plot_model(example_λ, example_c)
 # ╟─42110c43-0dfc-4077-a2e4-d4b6b3a69899
 # ╟─c224fc59-54b8-4b2b-a3a1-509ee3ff16fd
 # ╟─9b4fbf82-44a9-4d1e-9edd-9a09a633e48f
-# ╟─21f437c3-73ee-4641-a6ad-c01cd74a9763
-# ╟─6e8a61ec-9f2e-48cc-89a0-339e47e748ff
-# ╟─db216863-3d32-4d2c-ace8-fa4212f129e8
-# ╟─53c9a4ce-97f2-4fb7-96d7-1f513793ae3d
-# ╟─fefe4c1b-c857-4bd5-b434-bfac3d723613
-# ╟─0c9b0860-d5ca-4fa2-99eb-d0ea37175813
 # ╟─77af885c-f608-42f2-86f6-ebaf3f6d176a
 # ╟─a396084e-0620-4ea2-9b17-9ebff8c9afb4
 # ╟─8ddcc42c-d8d1-4d78-a2e6-7ec006d0e2e4
@@ -1005,11 +1190,18 @@ plot_model(example_λ, example_c)
 # ╟─212160ed-47fd-40e5-b42c-e4a4d449194e
 # ╟─4aacd22c-c0c0-42f3-be77-48780121f7bf
 # ╟─a2567683-1b7a-41a0-970f-8b7fccc085ea
+# ╟─fcbf9525-abed-4343-a641-039000cc9b01
+# ╟─331f2e9c-e94e-47a6-8213-d5e22ada4e48
+# ╟─56c97bea-8779-4a81-b5eb-e69f020cb23f
+# ╟─72644945-b5e6-4c43-9c23-bd4a49166a43
 # ╟─a66c5e1e-e9e0-4cf1-bafa-8e72a49af8c9
 # ╟─731dddb0-25be-459b-a995-da9383683c56
 # ╟─40078ef0-7ad8-4959-a7ad-2667efdb9e8b
 # ╟─5641fd17-a25e-4762-85b0-7c398be42eda
 # ╟─2052703e-bd23-46e4-a564-470736633b44
+# ╟─f4804a28-f27e-44b7-84ac-186455eace95
+# ╟─017acb94-2675-4225-b34f-ee87ae241dcb
+# ╟─44d1958b-6dcf-43a9-98f5-fd3f039aba49
 # ╟─bc65e167-8238-4b00-8999-754ee4fc5a2b
 # ╟─fac04ee7-2280-47cd-a00b-582ca37c84ab
 # ╟─28ace618-9f7b-4f43-91e9-57af1c4da443
@@ -1021,29 +1213,25 @@ plot_model(example_λ, example_c)
 # ╟─48fae675-2262-45ae-a200-cbeca8343e66
 # ╟─aec667ad-d4cf-4686-a531-75defa6fe9ed
 # ╟─98c04373-d648-41de-97c3-7dafcfdf3661
-# ╟─38d25b49-26ae-4017-9a63-bf4a9994c0b6
-# ╟─c2982eb3-1e3a-4743-b81f-e054e03c5336
-# ╟─e25248a4-8e71-40d1-8d8a-7f596d93b656
-# ╟─c6112f98-fd00-412d-b5aa-a55326a318b8
-# ╟─e532862a-bc69-413b-889d-5bdac5ed7868
-# ╟─2c5725c7-5666-45c0-bf01-a03089c5dc76
-# ╟─247ce6ec-7719-4618-8946-612a678720e0
-# ╟─44d1958b-6dcf-43a9-98f5-fd3f039aba49
-# ╟─df667e95-d9ef-4fcc-bedf-0a88eec9f35b
 # ╟─b862bafe-f46c-4cb6-ade6-9dca5767ef19
 # ╟─29b295fa-740e-4f33-ace7-50abb932ba0b
 # ╟─21a75a77-30af-4ce9-b208-988b0cbe8091
+# ╟─8c874d10-3d9b-4a6d-8833-41b63bf27a4e
+# ╟─7c57df4a-3c99-437c-a25a-d520f5a38a1d
 # ╟─31e86552-cef8-419c-8edb-7a74b2dba3f2
 # ╟─712e70a0-63b4-4a05-932b-65afb441736a
 # ╟─5459e3a8-f813-4159-a90e-5e94000ae314
+# ╟─fc215efc-ced0-4114-9291-8ae2ba3663ba
+# ╟─c6112f98-fd00-412d-b5aa-a55326a318b8
 # ╟─696635e9-cb83-4900-9046-c427d6c30b9d
-# ╟─1561e1c6-b2c0-4500-824c-a75a6ced4922
 # ╟─1b6490d5-a0bb-4ea1-ac2f-2571d2392ac8
 # ╟─148b9f67-6355-4cf1-a2b0-7d34b9d7407d
 # ╟─84315bb3-c780-42e3-a1af-8b21ab4e31c1
 # ╟─ae4f30f4-cf46-4a38-af04-a06fcdddd23d
 # ╟─baad54b7-b944-4289-8ca5-72852c06020b
-# ╟─6df2e853-2a25-4cb8-bb86-e4b3990f7d1a
+# ╟─fc13ba32-064c-4df3-aeb5-8facdd8c879f
+# ╟─ecdd00f4-4dae-407d-8072-ae9f3da1a4a3
+# ╟─9711a1e4-094a-4674-a6c1-d512a3e161dd
 # ╟─84fde6a3-a9af-44f0-943c-f80a9712a274
 # ╟─7f58bc9e-cd36-4ab1-8885-2884e2e4d2b9
 # ╟─5a6be561-3d5e-4eb0-aff5-cbe75150e494
@@ -1051,30 +1239,47 @@ plot_model(example_λ, example_c)
 # ╟─cf402fa6-21c8-4f4b-b24e-f07ec5435ab7
 # ╟─fdb01fa2-b8a7-47e7-9834-3a60fc9481c1
 # ╟─aeace4bb-2fed-414c-bdbb-697dc42f0938
+# ╟─5dd898a8-e8d1-4846-8d52-d212a436d3d6
+# ╟─45b72705-7ed3-4ace-aa62-0cd447d0fd53
+# ╟─efbcc42b-4238-4e31-a6ee-fb98749a3fbc
+# ╟─569bc894-cdac-4b19-9cfe-6da8cfb8a0a2
+# ╟─0e27f658-968e-4652-96d4-8cfd3bb3c138
+# ╟─d5d257ef-f2d9-4354-999d-17445cfd740e
+# ╟─f064ff09-40c9-4d3a-9e21-c2c3361cad17
+# ╟─92392332-1321-41fd-88bd-9c6daf33daac
+# ╟─98581c36-eac9-487c-9127-0604fed057ce
+# ╟─c5c9b6ac-df6b-4b83-adce-115cc0ef3b5e
+# ╟─5a8005ea-b6fb-4bdf-ac95-30edadb109bc
+# ╟─9de156fc-bcab-462f-b563-fae5058a00ef
+# ╟─b2f3d10c-66be-4ce8-b0bb-3a5e74474b64
+# ╟─237e136c-182c-4183-85b0-e95acb7776e6
+# ╟─df8aa262-f3a8-4cfe-af8e-8aa8bd877c9d
+# ╟─717e2b1a-effd-49fa-af32-414c9ec0acc5
+# ╟─34cab4b3-7b3d-45e1-9040-503ecd6e1c16
+# ╟─97647cf0-ec8e-4e0e-b481-24683b2fd99a
 # ╟─5dce214d-5d0d-4134-a69d-aecd4450bb2b
 # ╟─56ffe1c0-ef3b-4ecb-9ff3-acf91199a02d
 # ╟─6bc1af68-0732-41a1-8568-94a760c2049b
-# ╟─c979f17f-5437-4c7c-af1c-b351bee84f84
-# ╟─1a816ccf-13c4-4787-96e3-f68919d93d33
-# ╟─ab3292bf-cf74-411d-a6a7-6c5bdeebf83f
-# ╟─792697c0-e231-47e4-9793-0f4b44c4f68a
 # ╟─2b37275e-645e-467b-8376-14960f3e7dfa
 # ╟─f5721070-6141-4abe-b231-484ce50ce8d8
-# ╟─9fb57d53-3bd8-4678-9a40-413ae2507e4f
-# ╟─10af9009-5206-4d70-8d95-1cd78a7f850a
+# ╟─c979f17f-5437-4c7c-af1c-b351bee84f84
+# ╟─1a816ccf-13c4-4787-96e3-f68919d93d33
 # ╟─2f0e278b-3cba-41ae-b4f9-f57aea48c45b
 # ╟─0766fd85-0bbc-40fd-bf9d-218e11dbfde4
 # ╟─4fb74102-0074-41e5-a679-8562c7867aeb
 # ╟─260592ea-a83b-4e32-a4e7-3e73923b0ff8
-# ╟─53adebc5-520b-4847-ba45-15061d5053b5
 # ╟─3ddb3ba9-941c-4f4e-b063-9e1663de321a
 # ╟─bfca19f2-fc18-41f6-bc0c-8d34e3bce647
 # ╟─68d94e24-e474-45d5-9ced-4469ef2500f0
 # ╟─470a481d-9312-4936-8de2-24cba35bfced
-# ╟─1473c1e2-50d8-4d67-b2c0-ed1ebed49ef4
+# ╟─53adebc5-520b-4847-ba45-15061d5053b5
+# ╟─ebfadab6-1ad5-4fa6-bc70-fdc405e50b89
+# ╟─8699f9f8-557c-4cbb-99ce-2392f0175bc3
+# ╟─1a91e8f1-ff36-48af-b3b2-2bfa13dfa3f9
 # ╟─ff1f6e6a-581b-4ef6-b129-c14851da87da
 # ╟─c63ca361-d69a-4b95-9015-338ab834c80a
 # ╟─f3264078-b62c-432c-b5a6-a18b630ea847
+# ╟─9385aaed-a6cd-4c99-8dd3-6f5305c1a03c
 # ╟─3ce26006-1b16-4c1a-8d38-6060b6440196
 # ╠═6a822a81-a6ca-474f-a2f5-233843565de9
 # ╠═984abf1c-e5f4-4766-a914-cabe411cf87b

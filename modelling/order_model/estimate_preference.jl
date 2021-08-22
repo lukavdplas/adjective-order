@@ -492,16 +492,19 @@ end
 # ╔═╡ 2eb3da98-f276-4d84-bfc9-6281699d92b9
 md"### By condidence rating on target"
 
-# ╔═╡ 103e6f38-a325-4e8a-a680-05af49fa7aed
-confidence_plot = plot_preference(:confidence_on_semantic, 2:5,
+# ╔═╡ ffb3d5ec-b1d1-4d46-91b3-613bef41cd70
+confidence_plot() = plot_preference(:confidence_on_semantic, 2:5,
 	relative_judgements,
 	xlabel = "confidence on semantic task",
 	seriestype = :bar
 )
 
+# ╔═╡ 103e6f38-a325-4e8a-a680-05af49fa7aed
+confidence_plot()
+
 # ╔═╡ 0db341c7-234f-4e36-9a67-e24e421629d3
 let
-	p = plot(confidence_plot, size = (500, presentation_maxsize[2]))
+	p = plot(confidence_plot(), size = (500, presentation_maxsize[2]))
 	
 	savefig(p,
 		paths[:presentation_figures] * "order_pref_by_confidence.svg")
@@ -517,7 +520,7 @@ target_disagreement_values = let
 end
 
 # ╔═╡ 7f35d271-2d38-49b7-932e-4efed601c01e
-disagreement_plot = let
+disagreement_plot() = let
 	digits = 2
 	
 	data = copy(relative_judgements)
@@ -533,12 +536,30 @@ disagreement_plot = let
 	)
 end
 
+# ╔═╡ fddb64e3-1105-4bb2-8203-45f0ecf838f0
+disagreement_plot()
+
 # ╔═╡ 75a4a84d-4693-4056-a4cc-489fc0bd4c84
 let
-	p = plot(disagreement_plot, size = presentation_maxsize, aspect_ratio = 0.06)
+	p = plot(disagreement_plot(), size = presentation_maxsize, aspect_ratio = 0.06)
 	
 	savefig(p,
 		paths[:presentation_figures] * "order_pref_by_disagreement.svg")
+end
+
+# ╔═╡ ff838e65-dc60-4340-b56c-845c43c112d9
+let
+	p1 = plot(disagreement_plot(), 
+		legend = nothing, guidefontsize = 10)
+	
+	p2 = plot(confidence_plot(), 
+		legend = nothing, guidefontsize = 10)
+	
+	p = plot(p1, p2, layout = (1,2), size = (600, 300))
+	
+	savefig(p,
+		paths[:presentation_figures] * "order_pref_by_disagreement_and_confidence.svg"
+	)
 end
 
 # ╔═╡ Cell order:
@@ -587,8 +608,11 @@ end
 # ╠═a3a10afb-1872-413d-b1a1-255a5a4536f6
 # ╟─2eb3da98-f276-4d84-bfc9-6281699d92b9
 # ╠═103e6f38-a325-4e8a-a680-05af49fa7aed
+# ╠═ffb3d5ec-b1d1-4d46-91b3-613bef41cd70
 # ╠═0db341c7-234f-4e36-9a67-e24e421629d3
 # ╟─b92be1b9-556f-4381-bbdf-c141d2e0003d
 # ╠═1c55f8bf-3258-41b6-854b-0d3ae76d67a5
-# ╟─7f35d271-2d38-49b7-932e-4efed601c01e
+# ╠═fddb64e3-1105-4bb2-8203-45f0ecf838f0
+# ╠═7f35d271-2d38-49b7-932e-4efed601c01e
 # ╠═75a4a84d-4693-4056-a4cc-489fc0bd4c84
+# ╠═ff838e65-dc60-4340-b56c-845c43c112d9

@@ -1,9 +1,9 @@
 adj_target,scenario,condition,scale,mean_disagreement
+expensive,spring,unimodal,price,0.15873015873015867
+expensive,spring,bimodal,price,0.14428571428571427
+expensive,ball,unimodal,price,0.18714285714285708
+expensive,ball,bimodal,price,0.13841269841269838
 big,ball,unimodal,size,0.11857142857142855
 big,ball,bimodal,size,0.17269841269841266
 long,spring,unimodal,size,0.2514285714285714
 long,spring,bimodal,size,0.1842857142857143
-expensive,ball,unimodal,price,0.18714285714285708
-expensive,ball,bimodal,price,0.13841269841269838
-expensive,spring,unimodal,price,0.15873015873015867
-expensive,spring,bimodal,price,0.14428571428571427
